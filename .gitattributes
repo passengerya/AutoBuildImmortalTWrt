@@ -5,3 +5,6 @@
 *.conf   text eol=lf
 *.md     text eol=lf
 *.txt    text eol=lf
+# run 自解压包 / ipk 是二进制载荷，禁止任何行尾转换，防止损坏
+*.run    binary
+*.ipk    binary

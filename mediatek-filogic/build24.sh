@@ -5,12 +5,11 @@ source shell/switch_repository.sh
 
 #echo "✅ 你选择了第三方软件包：$CUSTOM_PACKAGES"
 # 下载 run 文件仓库
-echo "🔄 正在同步第三方软件仓库 Cloning run file repo..."
-git clone --depth=1 -b master https://github.com/passengerya/store.git /tmp/store-run-repo
+echo "🔄 使用本仓库内嵌 store 目录（sync-store 工作流每日同步）"
 
-# 拷贝 run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
+# 拷贝 store/run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
 mkdir -p /home/build/immortalwrt/extra-packages
-cp -r /tmp/store-run-repo/run/arm64/* /home/build/immortalwrt/extra-packages/
+cp -r /home/build/immortalwrt/store/run/arm64/* /home/build/immortalwrt/extra-packages/
 
 echo "✅ Run files copied to extra-packages:"
 ls -lh /home/build/immortalwrt/extra-packages/*.run

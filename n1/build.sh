@@ -37,11 +37,10 @@ PACKAGES="$PACKAGES perlbase-base perlbase-file perlbase-time perlbase-utf8 perl
 # 晶晨宝盒（追加第三方必备软件 用于写入emmc 请不要注释）
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-amlogic luci-i18n-amlogic-zh-cn"
 
-echo "🔄 正在同步第三方软件仓库 Cloning run file repo..."
-git clone --depth=1 -b master https://github.com/passengerya/store.git /tmp/store-run-repo
-# 拷贝 run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
+echo "🔄 使用本仓库内嵌 store 目录（sync-store 工作流每日同步）"
+# 拷贝 store/run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
 mkdir -p /home/build/immortalwrt/extra-packages
-cp -r /tmp/store-run-repo/run/arm64/* /home/build/immortalwrt/extra-packages/
+cp -r /home/build/immortalwrt/store/run/arm64/* /home/build/immortalwrt/extra-packages/
 echo "✅ Run files copied to extra-packages:"
 ls -lh /home/build/immortalwrt/extra-packages/*.run
 # 解压并拷贝ipk到packages目录

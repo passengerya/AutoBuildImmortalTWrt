@@ -106,6 +106,7 @@ jobs:
               -v "${{ github.workspace }}/files/etc/uci-defaults:/home/build/immortalwrt/files/etc/uci-defaults" \
               -v "${{ github.workspace }}/arch/$ARCH:/home/build/immortalwrt/files/etc/opkg/arch.conf" \
               -v "${{ github.workspace }}/shell:/home/build/immortalwrt/shell" \
+              -v "${{ github.workspace }}/store:/home/build/immortalwrt/store" \
               -v "${{ github.workspace }}/raspberrypi/24.10/build.sh:/home/build/openwrt/build.sh" \
               -e PROFILE=$profile \
               -e LUCI_VERSION=$luci_version \
