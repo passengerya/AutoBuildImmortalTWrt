@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 从 CloudRunFilesBuilder 的 latest release 同步 .run 文件到本仓库内嵌 store/run/ 目录,
-并从 STORE_IPK_REPO(默认 passengerya/store 的 master 分支)同步 run/x86、run/arm64
-下的 .ipk 文件(保留应用同名子目录结构)。
+然后把每个 .run 自解压包里的 .ipk 解压到应用同名子目录(软件包目录)——
+store 中的所有文件均来源于 passengerya/CloudRunFilesBuilder。
 
 .run 分类规则:
   - 文件名含 x86_64 / x86-64          -> store/run/x86/
@@ -17,11 +17,14 @@
 
 同步完成后, 删除同一应用、同一架构、同日期前缀下的旧版本 .run 文件
 (24_ 只删 24_, 25- 只删 25-, 避免同步 apk 版时误删 ipk 版),
-只清理 run/x86、run/arm64 根目录下的 .run, 不触碰任何 .ipk 文件。
+只清理 run/x86、run/arm64 根目录下的 .run。
 
-.ipk 同步规则:
-  - 源: STORE_IPK_REPO 的 master 分支(仅 run/x86、run/arm64 下的 .ipk 文件)
-  - 保留应用同名子目录结构; 只新增/覆盖, 不删除本地已有 ipk(允许人工添加)
+软件包目录(.ipk)规则:
+  - 每个 .run 解压出的 .ipk 放入以该 .run 推导出的应用同名子目录,
+    如 dufs-0.46.0-r1_x86_64.run -> store/run/x86/dufs/*.ipk
+  - 由本脚本解压生成的应用目录每次同步会重建(该目录归同步管理);
+    人工新增 ipk 请放入独立的、与 .run 推导名不冲突的目录, 不会被删除
+  - 不含 .ipk 的 .run(如 25.12 的 apk 包)不生成目录
 
 用法:
   BUILDER_REPO=owner/repo GITHUB_TOKEN=xxx python3 store/sync_run_files.py
@@ -33,11 +36,11 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import urllib.error
 import urllib.request
 
 BUILDER_REPO = os.environ.get("BUILDER_REPO", "passengerya/CloudRunFilesBuilder").rstrip("/")
-STORE_IPK_REPO = os.environ.get("STORE_IPK_REPO", "passengerya/store").rstrip("/")
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,18 +81,16 @@ def api_get(url):
         return json.loads(resp.read().decode("utf-8"))
 
 
-def api_get_raw(url):
-    """GET 并返回原始字节(用于下载 blob 内容)。"""
-    headers = {
-        "Accept": "application/vnd.github.raw",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "sync-run-files",
-    }
-    if TOKEN:
-        headers["Authorization"] = "Bearer %s" % TOKEN
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        return resp.read()
+def app_dir_of(name):
+    """从 .run 文件名推导应用目录名(去掉前缀/架构/版本/修订/hash, 保留连字符, 小写)。"""
+    s = name[:-4] if name.endswith(".run") else name
+    s = RE_LEADING_PREFIX.sub("", s)
+    s = RE_ARCH.sub("", s)
+    s = RE_VERSION.sub("", s)
+    s = RE_REV.sub("", s)
+    s = RE_HASH.sub("", s)
+    s = RE_NUM.sub("", s)
+    return re.sub(r"[^0-9a-z-]+", "-", s.lower()).strip("-")
 
 
 def norm_key(name):
@@ -216,47 +217,57 @@ def cleanup_old(key, arch, keep_name, dry_run=False):
                 os.remove(p)
 
 
-def sync_ipk_dirs(dry_run=False):
-    """从 STORE_IPK_REPO(master 分支)同步 run/x86、run/arm64 下的 .ipk 文件。
+def extract_ipks_from_runs(dry_run=False):
+    """把 store/run/<arch>/ 根目录下每个 .run 解压出的 .ipk 放入应用同名子目录。
 
-    保留应用同名子目录结构; 只新增/覆盖, 不删除本地已有 ipk(允许人工添加)。
+    来源即 CloudRunFilesBuilder 拉取的 .run 包本身(store 中所有文件均来源于 builder);
+    解压生成的应用目录每次同步会重建, 不含 .ipk 的 .run(如 25.12 apk 包)不生成目录。
     """
-    print("== 开始同步 ipk 文件(源: %s master) ==" % STORE_IPK_REPO)
-    try:
-        tree = api_get("https://api.github.com/repos/%s/git/trees/master?recursive=1" % STORE_IPK_REPO)
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            print("源仓库 %s 不存在, 跳过 ipk 同步。" % STORE_IPK_REPO)
-            return
-        raise
-    if tree.get("truncated"):
-        print("⚠️ 目录树过大被截断, ipk 同步可能不完整。")
+    print("== 开始从 .run 解压 ipk 到应用子目录(软件包目录) ==")
     count = 0
-    for e in tree.get("tree", []):
-        path = e.get("path", "")
-        if e.get("type") != "blob" or not path.endswith(".ipk"):
+    for arch, d in sorted(ARCH_DIRS.items()):
+        if not os.path.isdir(d):
             continue
-        m = re.match(r"^run/(x86|arm64)/(.+)$", path)
-        if not m:
-            continue
-        arch, rel = m.group(1), m.group(2)
-        dest = os.path.join(ARCH_DIRS[arch], rel)
-        if os.path.isfile(dest) and os.path.getsize(dest) == e.get("size", 0):
-            print("[%s] ipk 已存在且大小一致, 跳过: %s" % (arch, rel))
-            continue
-        if dry_run:
-            print("[%s] ipk 将同步: %s (%d bytes)" % (arch, rel, e.get("size", 0)))
-            count += 1
-            continue
-        data = api_get_raw("https://api.github.com/repos/%s/git/blobs/%s" % (STORE_IPK_REPO, e["sha"]))
-        os.makedirs(os.path.dirname(dest), exist_ok=True)
-        tmp = dest + ".tmp"
-        with open(tmp, "wb") as f:
-            f.write(data)
-        os.replace(tmp, dest)
-        print("[%s] ipk 同步: %s (%d bytes)" % (arch, rel, len(data)))
-        count += 1
-    print("ipk 同步结束, 共处理 %d 个文件。" % count)
+        for f in sorted(os.listdir(d)):
+            p = os.path.join(d, f)
+            if not f.endswith(".run") or not os.path.isfile(p):
+                continue
+            app = app_dir_of(f)
+            if not app:
+                print("[%s] 无法推导应用名, 跳过: %s" % (arch, f))
+                continue
+            tmp = os.path.join(d, ".unpack-" + app)
+            try:
+                result = subprocess.run(
+                    ["sh", p, "--target", tmp, "--noexec"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+                if result.returncode != 0:
+                    print("[%s] 解压失败(返回码 %s), 跳过: %s" % (arch, result.returncode, f))
+                    continue
+                ipks = []
+                for root, _, names in os.walk(tmp):
+                    for n in names:
+                        if n.endswith(".ipk"):
+                            ipks.append(os.path.join(root, n))
+                if not ipks:
+                    print("[%s] 不含 ipk(apk 包或空包), 跳过: %s" % (arch, f))
+                    continue
+                dest = os.path.join(d, app)
+                if dry_run:
+                    print("[%s] %s -> %s/ (%d 个 ipk)" % (arch, f, app, len(ipks)))
+                    count += len(ipks)
+                    continue
+                if os.path.isdir(dest):
+                    shutil.rmtree(dest)
+                os.makedirs(dest)
+                for src in ipks:
+                    shutil.copy2(src, dest)
+                    print("[%s] ipk 解压: %s/%s" % (arch, app, os.path.basename(src)))
+                    count += 1
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+    print("ipk 解压结束, 共处理 %d 个文件。" % count)
 
 
 def main():
@@ -284,8 +295,8 @@ def main():
             else:
                 run_sync(assets, args.dry_run)
 
-    # ipk 阶段独立执行: 即使上游暂无新 .run 资产, 也要保持 ipk 目录同步
-    sync_ipk_dirs(dry_run=args.dry_run)
+    # ipk 阶段独立执行: 即使上游暂无新 .run 资产, 也要保持软件包目录与 .run 一致
+    extract_ipks_from_runs(dry_run=args.dry_run)
 
     print("同步完成。" if not args.dry_run else "dry-run 结束, 未做任何修改。")
 

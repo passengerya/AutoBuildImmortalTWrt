@@ -60,11 +60,29 @@ ISO在虚拟机引导后 跑码结束后，在命令行输入 `ddd` 按提示 �
 ## 如何查询imm仓库内有哪些插件
 https://mirrors.sjtug.sjtu.edu.cn/immortalwrt/releases/24.10.4/packages/x86_64/luci/
 ## 如何查询imm仓库外目前可以集成哪些插件
-https://github.com/passengerya/store
+见本仓库 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 目录（x86 看 `x86/`，ARM 看 `arm64/`）
 > 具体方法 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209
 ## 【视频教程】如何集成第三方插件？
 https://www.youtube.com/watch?v=KN6AJYV1hBI <br>
 https://www.youtube.com/watch?v=7i6BQeitUtE
+
+## 第三方软件包机制（内嵌 store）
+本项目的第三方软件（ImmortalWrt 官方仓库以外的软件包）全部经由 `passengerya/CloudRunFilesBuilder` 拉取上游：
+1. **上游拉取**：CloudRunFilesBuilder 每日构建，同步上游项目最新 ipk 并打包成 `.run` 自解压包，发布到当日 Release；
+2. **同步到内嵌 store**：本仓库 `Sync Store` 工作流每天 23:00 UTC（北京时间 7:00）把 Release 里的 `.run` 同步到 `store/run/x86/`、`store/run/arm64/`，并把每个 `.run` 里的 ipk **解压到应用同名子目录**（软件包目录），提交到 master；
+3. **构建时更新软件包目录**：构建工作流把 `store/` 挂载进 ImageBuilder 容器，构建脚本拷贝 `store/run/<arch>/*` 到 `extra-packages/`，`shell/prepare-packages.sh` 解包并把所有 ipk 更新进 `packages/` 软件包目录；
+4. **个人选择开启软件**：在 [shell/custom-packages.sh](shell/custom-packages.sh)（24.10/ipk 通道）或 [shell/apk-custom-packages.sh](shell/apk-custom-packages.sh)（25.12/apk 通道）中**取消对应行的注释**即可把软件加进固件；
+5. **打包进固件**：`make image` 按 `PACKAGES` 列表构建最终 OpenWrt 固件包。
+
+```
+CloudRunFilesBuilder（上游 ipk → .run → 每日 Release）
+        ↓ Sync Store 工作流（每日 7:00）
+store/run/{x86,arm64}/（.run + 解压出的软件包目录）
+        ↓ 构建时挂载 + prepare-packages.sh
+ImageBuilder packages/ 软件包目录
+        ↓ custom-packages.sh 注释开关
+make image → OpenWrt 固件包
+```
 
 ## 旁路由的用户必读
 近期不少用户修改配置文件中的默认ip地址，误认为这个工作流可以直接设置旁路ip。这是巨大的误解，这样设置就乱套了。<br>
