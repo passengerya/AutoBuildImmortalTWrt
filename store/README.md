@@ -17,16 +17,25 @@ store/
 
 ## 同步机制
 
+同步分两个阶段（`sync_run_files.py`）：
+
+**阶段一：.run 文件**
 - 来源：`passengerya/CloudRunFilesBuilder` 的**最新 Release**（每日构建的 .run 资产）
-- 触发：`.github/workflows/sync-store.yml`
-  - 定时：每天 23:00 UTC（北京时间 7:00，晚于上游 6:00 的每日构建）
-  - 手动：workflow_dispatch（可指定其它源仓库）
-- 分类规则（`sync_run_files.py`）：
+- 分类规则：
   - 文件名含 `x86_64` → `run/x86/`；含 `aarch64`/`arm64` → `run/arm64/`
   - 含 `aarch32`/`arm32`/`i386` → 跳过；无架构标记（如 `_all`）→ 两个目录都放
   - 同一应用同一架构多个变体时：优先延续现有变体；新应用按 `generic > cortex-a53 > a53 > 纯aarch64` 选择
   - 同步后删除**同应用、同架构、同日期前缀**的旧版本 .run（`24_` 只删 `24_`、`25-` 只删 `25-`），不触碰 .ipk 和子目录
-- 本目录只由 `sync-store` 工作流自动更新，**不要手动修改**；如需人工新增 ipk，按应用建同名子目录放入即可（同步脚本不会删除 .ipk）
+
+**阶段二：.ipk 文件**
+- 来源：`passengerya/store` 仓库 **master 分支**的 `run/x86`、`run/arm64` 下全部 .ipk（通过 git trees API 拉取）
+- 保留应用同名子目录结构；只新增/覆盖（大小一致跳过），**不删除本地 ipk**（允许人工添加）
+
+**触发**：`.github/workflows/sync-store.yml`
+- 定时：每天 23:00 UTC（北京时间 7:00，晚于上游 6:00 的每日构建）
+- 手动：workflow_dispatch（可指定其它源仓库）
+
+> 本目录只由 `sync-store` 工作流自动更新，**不要手动修改**；如需人工新增 ipk，按应用建同名子目录放入即可。
 
 ## 如何手动同步
 
