@@ -15,6 +15,11 @@ store 中的所有文件均来源于 passengerya/CloudRunFilesBuilder。
   - 优先保留本仓库现有文件使用的变体(不改变现有设备的安装习惯)
   - 本仓库没有该应用时, 新应用按 ARM64_VARIANT_PRIORITY 的顺序选择
 
+24/25 通道分离:
+  - 24.10 ipk 通道(前缀 24_/24- 或无前缀)与 25.12 apk 通道(前缀 25_/25-)
+    各自独立选择变体, 两版 .run 在 store 中共存、互不挤占
+  - 24 对应 shell/custom-packages.sh(opkg 构建), 25 对应 shell/apk-custom-packages.sh(apk 构建)
+
 同步完成后, 删除同一应用、同一架构、同日期前缀下的旧版本 .run 文件
 (24_ 只删 24_, 25- 只删 25-, 避免同步 apk 版时误删 ipk 版),
 只清理 run/x86、run/arm64 根目录下的 .run。
@@ -91,6 +96,18 @@ def app_dir_of(name):
     s = RE_HASH.sub("", s)
     s = RE_NUM.sub("", s)
     return re.sub(r"[^0-9a-z-]+", "-", s.lower()).strip("-")
+
+
+def channel_of(name):
+    """返回通道: ipk(24.10, 前缀 24_/24- 或无前缀) 或 apk(25.12, 前缀 25_/25-)。
+
+    24 对应 shell/custom-packages.sh(opkg/ipk 构建), 25 对应 shell/apk-custom-packages.sh(apk 构建),
+    两版 .run 在 store 中按通道共存, 互不挤占。
+    """
+    m = RE_LEADING_PREFIX.match(name)
+    if not m:
+        return "ipk"
+    return "apk" if m.group(0).startswith("25") else "ipk"
 
 
 def norm_key(name):
@@ -314,17 +331,17 @@ def run_sync(assets, dry_run=False):
                 if v is not None:
                     existing_variants[(norm_key(f), arch)] = v
 
-    # 按(应用, 架构)分组
+    # 按(通道, 应用, 架构)分组: 24/25 两个通道各自保留一个变体, 互不挤占
     groups = {}
     for a in assets:
         for arch in arch_of(a["name"]):
             if arch == "skip":
                 print("跳过(架构不支持): %s" % a["name"])
                 continue
-            groups.setdefault((norm_key(a["name"]), arch), []).append(a)
+            groups.setdefault((channel_of(a["name"]), norm_key(a["name"]), arch), []).append(a)
 
-    for (key, arch) in sorted(groups):
-        cands = groups[(key, arch)]
+    for (channel, key, arch) in sorted(groups):
+        cands = groups[(channel, key, arch)]
         chosen = choose(cands, key, arch, existing_variants)
         if len(cands) > 1:
             for c in cands:
