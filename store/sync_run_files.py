@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-从 CloudRunFilesBuilder 的 latest release 同步 .run 文件到本仓库内嵌 store/run/ 目录。
+从 CloudRunFilesBuilder 的 latest release 同步 .run 文件到本仓库内嵌 store/run/ 目录,
+并从 STORE_IPK_REPO(默认 passengerya/store 的 master 分支)同步 run/x86、run/arm64
+下的 .ipk 文件(保留应用同名子目录结构)。
 
-分类规则:
+.run 分类规则:
   - 文件名含 x86_64 / x86-64          -> store/run/x86/
   - 文件名含 aarch64 / arm64           -> store/run/arm64/
   - 文件名含 aarch32 / arm32 / i386    -> 跳过
@@ -16,6 +18,10 @@
 同步完成后, 删除同一应用、同一架构、同日期前缀下的旧版本 .run 文件
 (24_ 只删 24_, 25- 只删 25-, 避免同步 apk 版时误删 ipk 版),
 只清理 run/x86、run/arm64 根目录下的 .run, 不触碰任何 .ipk 文件。
+
+.ipk 同步规则:
+  - 源: STORE_IPK_REPO 的 master 分支(仅 run/x86、run/arm64 下的 .ipk 文件)
+  - 保留应用同名子目录结构; 只新增/覆盖, 不删除本地已有 ipk(允许人工添加)
 
 用法:
   BUILDER_REPO=owner/repo GITHUB_TOKEN=xxx python3 store/sync_run_files.py
@@ -31,6 +37,7 @@ import urllib.error
 import urllib.request
 
 BUILDER_REPO = os.environ.get("BUILDER_REPO", "passengerya/CloudRunFilesBuilder").rstrip("/")
+STORE_IPK_REPO = os.environ.get("STORE_IPK_REPO", "passengerya/store").rstrip("/")
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -69,6 +76,20 @@ def api_get(url):
     req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def api_get_raw(url):
+    """GET 并返回原始字节(用于下载 blob 内容)。"""
+    headers = {
+        "Accept": "application/vnd.github.raw",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "sync-run-files",
+    }
+    if TOKEN:
+        headers["Authorization"] = "Bearer %s" % TOKEN
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        return resp.read()
 
 
 def norm_key(name):
@@ -150,6 +171,9 @@ def choose(cands, key, arch, existing_variants):
 def download_asset(asset, dest_dir):
     os.makedirs(dest_dir, exist_ok=True)
     out = os.path.join(dest_dir, asset["name"])
+    if os.path.isfile(out) and os.path.getsize(out) == asset.get("size", 0):
+        print("[%s] 已存在且大小一致, 跳过下载: %s" % (os.path.basename(dest_dir), asset["name"]))
+        return
     print("[%s] 下载 %s" % (os.path.basename(dest_dir), asset["name"]))
     headers = {"User-Agent": "sync-run-files"}
     if TOKEN:
@@ -192,8 +216,51 @@ def cleanup_old(key, arch, keep_name, dry_run=False):
                 os.remove(p)
 
 
+def sync_ipk_dirs(dry_run=False):
+    """从 STORE_IPK_REPO(master 分支)同步 run/x86、run/arm64 下的 .ipk 文件。
+
+    保留应用同名子目录结构; 只新增/覆盖, 不删除本地已有 ipk(允许人工添加)。
+    """
+    print("== 开始同步 ipk 文件(源: %s master) ==" % STORE_IPK_REPO)
+    try:
+        tree = api_get("https://api.github.com/repos/%s/git/trees/master?recursive=1" % STORE_IPK_REPO)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            print("源仓库 %s 不存在, 跳过 ipk 同步。" % STORE_IPK_REPO)
+            return
+        raise
+    if tree.get("truncated"):
+        print("⚠️ 目录树过大被截断, ipk 同步可能不完整。")
+    count = 0
+    for e in tree.get("tree", []):
+        path = e.get("path", "")
+        if e.get("type") != "blob" or not path.endswith(".ipk"):
+            continue
+        m = re.match(r"^run/(x86|arm64)/(.+)$", path)
+        if not m:
+            continue
+        arch, rel = m.group(1), m.group(2)
+        dest = os.path.join(ARCH_DIRS[arch], rel)
+        if os.path.isfile(dest) and os.path.getsize(dest) == e.get("size", 0):
+            print("[%s] ipk 已存在且大小一致, 跳过: %s" % (arch, rel))
+            continue
+        if dry_run:
+            print("[%s] ipk 将同步: %s (%d bytes)" % (arch, rel, e.get("size", 0)))
+            count += 1
+            continue
+        data = api_get_raw("https://api.github.com/repos/%s/git/blobs/%s" % (STORE_IPK_REPO, e["sha"]))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        tmp = dest + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, dest)
+        print("[%s] ipk 同步: %s (%d bytes)" % (arch, rel, len(data)))
+        count += 1
+    print("ipk 同步结束, 共处理 %d 个文件。" % count)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="同步 CloudRunFilesBuilder release 的 run 文件到内嵌 store")
+    parser = argparse.ArgumentParser(description="同步 run/ipk 文件到内嵌 store")
     parser.add_argument("--dry-run", action="store_true", help="只打印将执行的操作, 不下载、不删除")
     args = parser.parse_args()
 
@@ -201,20 +268,30 @@ def main():
         releases = api_get("https://api.github.com/repos/%s/releases?per_page=1" % BUILDER_REPO)
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            print("源仓库 %s 暂无 release, 跳过同步。" % BUILDER_REPO)
-            return
-        raise
-    if not releases:
-        print("源仓库 %s 暂无 release, 跳过同步。" % BUILDER_REPO)
-        return
-    release = releases[0]
-    print("使用 release: %s (%s)" % (release["tag_name"], release.get("name", "")))
+            print("源仓库 %s 暂无 release, 跳过 run 同步。" % BUILDER_REPO)
+        else:
+            raise
+    else:
+        if not releases:
+            print("源仓库 %s 暂无 release, 跳过 run 同步。" % BUILDER_REPO)
+        else:
+            release = releases[0]
+            print("使用 release: %s (%s)" % (release["tag_name"], release.get("name", "")))
 
-    assets = [a for a in release.get("assets", []) if a["name"].endswith(".run")]
-    if not assets:
-        print("该 release 中没有 .run 资产, 跳过同步。")
-        return
+            assets = [a for a in release.get("assets", []) if a["name"].endswith(".run")]
+            if not assets:
+                print("该 release 中没有 .run 资产, 跳过 run 同步。")
+            else:
+                run_sync(assets, args.dry_run)
 
+    # ipk 阶段独立执行: 即使上游暂无新 .run 资产, 也要保持 ipk 目录同步
+    sync_ipk_dirs(dry_run=args.dry_run)
+
+    print("同步完成。" if not args.dry_run else "dry-run 结束, 未做任何修改。")
+
+
+def run_sync(assets, dry_run=False):
+    """从 CloudRunFilesBuilder Release 同步 .run 资产到内嵌 store(原有逻辑)。"""
     # 统计本仓库现有的变体选择(用于同名应用延续原变体)
     existing_variants = {}
     for arch, d in ARCH_DIRS.items():
@@ -243,13 +320,11 @@ def main():
                 mark = "  <- 选中" if c is chosen else ""
                 print("[%s] 候选: %s%s" % (arch, c["name"], mark))
         print("[%s] 同步: %s" % (arch, chosen["name"]))
-        if args.dry_run:
+        if dry_run:
             cleanup_old(key, arch, chosen["name"], dry_run=True)
             continue
         download_asset(chosen, ARCH_DIRS[arch])
         cleanup_old(key, arch, chosen["name"])
-
-    print("同步完成。" if not args.dry_run else "dry-run 结束, 未做任何修改。")
 
 
 if __name__ == "__main__":
