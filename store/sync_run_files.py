@@ -35,6 +35,8 @@ store 中的所有文件均来源于 passengerya/CloudRunFilesBuilder。
   - store/README.md 的软件列表表格: 每次同步按 store 实际内容自动增加/删除行
   - shell/custom-packages.sh 生成段: ipk 通道(24.10)编译用 package 列表
   - shell/apk-custom-packages.sh 生成段: apk 通道(25.12)编译用 package 列表
+  - 生成段内部按 APP_META 的 cat 字段分大分类(见 CATEGORY_ORDER), 新应用
+    填好 cat 即自动归类, 分类在每次同步后保持一致
   - 生成段中已取消注释(启用)的应用在后续同步中保留启用状态
   - 连续 3 次同步不在上游 Release 的应用标记为「停更」: .run 与软件包目录
     全部保留, 仅在 README 表格版本列与生成段注释中附加"上游停更(保留旧版)"
@@ -71,39 +73,44 @@ MARK_END = "<!-- AUTO-SOFTWARE-TABLE:END -->"
 SH_BEGIN = "# ============ 以下由 Sync Store 自动维护(根据内嵌 store 实际内容生成) ============"
 SH_END = "# ============ 自动维护结束 ============"
 
-# 软件元数据: 应用名 -> {中文名, 用途, 来源}
-# 阶段三生成开关文件注释与 store/README 软件列表时使用; 新增应用时在这里补充一行
+# 软件元数据: 应用名 -> {中文名, 用途, 来源, 分类}
+# 阶段三生成开关文件注释与 store/README 软件列表时使用; 新增应用时在这里补充一行。
+# cat 为生成段大分类(见 CATEGORY_ORDER), 新应用按用途填写即可自动归类; 未写/未知分类落入「其他」。
 APP_META = {
-    "adguardhome": {"cn": "本地DNS去广告", "desc": "AdGuardHome 广告拦截与 DNS 服务", "src": "AdguardTeam/AdGuardHome"},
-    "argon": {"cn": "Argon主题", "desc": "简洁主题, 支持明暗自动切换", "src": "ImmortalWrt 官方源"},
-    "bandix": {"cn": "流量监控", "desc": "Bandix 实时流量监控与统计", "src": "timsaya/luci-app-bandix + dl.openwrt.ai"},
-    "clashoo": {"cn": "Clashoo代理", "desc": "代理工具(与 nikki 冲突勿同时开启)", "src": "kenzok8/openwrt-clashoo"},
-    "dufs": {"cn": "文件服务器", "desc": "轻量文件服务器(静态托管/上传/WebDAV)", "src": "sigoden/dufs"},
-    "easytier": {"cn": "异地组网", "desc": "EasyTier 点对点组网工具", "src": "EasyTier/luci-app-easytier"},
-    "homeproxy": {"cn": "代理平台", "desc": "现代代理平台(基于 sing-box)", "src": "immortalwrt/homeproxy"},
-    "luci-app-advancedplus": {"cn": "高级设置", "desc": "进阶设置(与 argon-config 冲突勿同时开启)", "src": "sirpdboy/luci-app-advancedplus"},
-    "luci-app-amlogic": {"cn": "晶晨宝盒", "desc": "晶晨机顶盒管理(仅 ARM64 平台)", "src": "ophub/luci-app-amlogic"},
-    "luci-app-aurora-config": {"cn": "Aurora配置中心", "desc": "Aurora 主题配置中心(配色/布局/字体/品牌/主题商店)", "src": "eamonxg/luci-app-aurora-config"},
-    "luci-app-nekobox": {"cn": "NekoBox代理", "desc": "NekoBox 代理工具", "src": "Thaolga/openwrt-nekobox"},
-    "luci-app-store": {"cn": "iStore商店", "desc": "iStore 应用商店", "src": "linkease/istore"},
-    "luci-app-tailscale-community": {"cn": "Tailscale组网", "desc": "Tailscale 组网(Community 版)", "src": "Tokisaki-Galaxy/luci-app-tailscale-community"},
-    "luci-app-uninstall": {"cn": "高级卸载", "desc": "彻底卸载插件的工具", "src": "上游 run 直采"},
-    "luci-theme-aurora": {"cn": "极光主题", "desc": "极光主题界面", "src": "eamonxg/luci-theme-aurora"},
-    "luci-theme-shadcn": {"cn": "Shadcn主题", "desc": "现代 Shadcn 风格界面主题", "src": "eamonxg/luci-theme-shadcn"},
-    "lucky": {"cn": "Lucky大吉", "desc": "端口转发/反向代理/内网穿透", "src": "gdy666/lucky via dl.openwrt.ai"},
-    "momo": {"cn": "Momo代理", "desc": "基于 sing-box 的透明代理", "src": "nikkinikki-org/OpenWrt-momo"},
-    "mosdns": {"cn": "DNS分流", "desc": "高性能 DNS 分流(DoH/DoQ 等)", "src": "sbwml/luci-app-mosdns"},
-    "nikki": {"cn": "Nikki代理", "desc": "代理工具(与 clashoo 冲突勿同时开启)", "src": "nikkinikki-org/OpenWrt-nikki"},
-    "openclash": {"cn": "OpenClash", "desc": "Clash 代理客户端", "src": "vernesong/OpenClash"},
-    "openlist2": {"cn": "网盘聚合", "desc": "OpenList2 网盘聚合(Alist 变体)", "src": "sbwml/luci-app-openlist2"},
-    "openwrt-daede": {"cn": "eBPF代理", "desc": "基于 eBPF 的高性能透明代理(dae/daed)", "src": "kenzok8/openwrt-daede"},
-    "passwall": {"cn": "PassWall", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall"},
-    "passwall2": {"cn": "PassWall2", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall2"},
-    "quickfile": {"cn": "文件管理", "desc": "轻量网页文件管理器(与 luci-app-run 冲突勿同时开启)", "src": "sbwml/luci-app-quickfile"},
-    "rtp2httpd": {"cn": "IPTV转发", "desc": "IPTV 流媒体转发服务器", "src": "stackia/rtp2httpd"},
-    "sing-box": {"cn": "Sing-box内核", "desc": "通用代理内核", "src": "SagerNet/sing-box"},
-    "ssrp-mihomo": {"cn": "SSRP代理", "desc": "SSR-Plus 代理工具(mihomo 内核)", "src": "fw876/helloworld"},
+    "adguardhome": {"cn": "本地DNS去广告", "desc": "AdGuardHome 广告拦截与 DNS 服务", "src": "AdguardTeam/AdGuardHome", "cat": "广告与DNS"},
+    "argon": {"cn": "Argon主题", "desc": "简洁主题, 支持明暗自动切换", "src": "ImmortalWrt 官方源", "cat": "系统与界面"},
+    "bandix": {"cn": "流量监控", "desc": "Bandix 实时流量监控与统计", "src": "timsaya/luci-app-bandix + dl.openwrt.ai", "cat": "网络服务"},
+    "clashoo": {"cn": "Clashoo代理", "desc": "代理工具(与 nikki 冲突勿同时开启)", "src": "kenzok8/openwrt-clashoo", "cat": "代理工具"},
+    "dufs": {"cn": "文件服务器", "desc": "轻量文件服务器(静态托管/上传/WebDAV)", "src": "sigoden/dufs", "cat": "文件与存储"},
+    "easytier": {"cn": "异地组网", "desc": "EasyTier 点对点组网工具", "src": "EasyTier/luci-app-easytier", "cat": "网络服务"},
+    "homeproxy": {"cn": "代理平台", "desc": "现代代理平台(基于 sing-box)", "src": "immortalwrt/homeproxy", "cat": "代理工具"},
+    "luci-app-advancedplus": {"cn": "高级设置", "desc": "进阶设置(与 argon-config 冲突勿同时开启)", "src": "sirpdboy/luci-app-advancedplus", "cat": "系统与界面"},
+    "luci-app-amlogic": {"cn": "晶晨宝盒", "desc": "晶晨机顶盒管理(仅 ARM64 平台)", "src": "ophub/luci-app-amlogic", "cat": "设备管理"},
+    "luci-app-aurora-config": {"cn": "Aurora配置中心", "desc": "Aurora 主题配置中心(配色/布局/字体/品牌/主题商店)", "src": "eamonxg/luci-app-aurora-config", "cat": "系统与界面"},
+    "luci-app-nekobox": {"cn": "NekoBox代理", "desc": "NekoBox 代理工具", "src": "Thaolga/openwrt-nekobox", "cat": "代理工具"},
+    "luci-app-store": {"cn": "iStore商店", "desc": "iStore 应用商店", "src": "linkease/istore", "cat": "设备管理"},
+    "luci-app-tailscale-community": {"cn": "Tailscale组网", "desc": "Tailscale 组网(Community 版)", "src": "Tokisaki-Galaxy/luci-app-tailscale-community", "cat": "网络服务"},
+    "luci-app-uninstall": {"cn": "高级卸载", "desc": "彻底卸载插件的工具", "src": "上游 run 直采", "cat": "系统与界面"},
+    "luci-theme-aurora": {"cn": "极光主题", "desc": "极光主题界面", "src": "eamonxg/luci-theme-aurora", "cat": "系统与界面"},
+    "luci-theme-shadcn": {"cn": "Shadcn主题", "desc": "现代 Shadcn 风格界面主题", "src": "eamonxg/luci-theme-shadcn", "cat": "系统与界面"},
+    "lucky": {"cn": "Lucky大吉", "desc": "端口转发/反向代理/内网穿透", "src": "gdy666/lucky via dl.openwrt.ai", "cat": "网络服务"},
+    "momo": {"cn": "Momo代理", "desc": "基于 sing-box 的透明代理", "src": "nikkinikki-org/OpenWrt-momo", "cat": "代理工具"},
+    "mosdns": {"cn": "DNS分流", "desc": "高性能 DNS 分流(DoH/DoQ 等)", "src": "sbwml/luci-app-mosdns", "cat": "广告与DNS"},
+    "nikki": {"cn": "Nikki代理", "desc": "代理工具(与 clashoo 冲突勿同时开启)", "src": "nikkinikki-org/OpenWrt-nikki", "cat": "代理工具"},
+    "openclash": {"cn": "OpenClash", "desc": "Clash 代理客户端", "src": "vernesong/OpenClash", "cat": "代理工具"},
+    "openlist2": {"cn": "网盘聚合", "desc": "OpenList2 网盘聚合(Alist 变体)", "src": "sbwml/luci-app-openlist2", "cat": "文件与存储"},
+    "openwrt-daede": {"cn": "eBPF代理", "desc": "基于 eBPF 的高性能透明代理(dae/daed)", "src": "kenzok8/openwrt-daede", "cat": "代理工具"},
+    "passwall": {"cn": "PassWall", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall", "cat": "代理工具"},
+    "passwall2": {"cn": "PassWall2", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall2", "cat": "代理工具"},
+    "quickfile": {"cn": "文件管理", "desc": "轻量网页文件管理器(与 luci-app-run 冲突勿同时开启)", "src": "sbwml/luci-app-quickfile", "cat": "文件与存储"},
+    "rtp2httpd": {"cn": "IPTV转发", "desc": "IPTV 流媒体转发服务器", "src": "stackia/rtp2httpd", "cat": "网络服务"},
+    "sing-box": {"cn": "Sing-box内核", "desc": "通用代理内核", "src": "SagerNet/sing-box", "cat": "代理工具"},
+    "ssrp-mihomo": {"cn": "SSRP代理", "desc": "SSR-Plus 代理工具(mihomo 内核)", "src": "fw876/helloworld", "cat": "代理工具"},
 }
+
+# 生成段大分类(按用途, 顺序即输出顺序): 新应用在 APP_META 里写 cat 字段即自动归类
+CATEGORY_ORDER = ["代理工具", "网络服务", "广告与DNS", "文件与存储", "系统与界面", "设备管理", "其他"]
+CAT_HEADER_FMT = "# ───────────────────── %s ─────────────────────"
 
 # 冲突组: 同一组内同时开启会在固件里互相冲突(参考各应用上游说明)。
 # 阶段三检测到同组内 >=2 个应用同时启用时, 在生成段顶部输出 ⚠️ 警告行。
@@ -568,6 +575,8 @@ def maintain_lists(summary, valid_names, dry_run=False):
             hit = sorted(group & enabled)
             if len(hit) >= 2:
                 sec.append("# ⚠️ 冲突警告: %s 同时开启, 可能互相冲突, 请只保留其中一个" % " 与 ".join(hit))
+        # 按大分类分组: 新应用按 APP_META 的 cat 自动归类, 分类顺序见 CATEGORY_ORDER
+        by_cat = {}
         for app, ch, ver, archs, pkgs in rows:
             if ch != channel:
                 continue
@@ -583,9 +592,20 @@ def maintain_lists(summary, valid_names, dry_run=False):
             if (channel, app) in stale_keys:
                 note_bits.append("上游停更(保留旧版)")
             note_label = " ".join(note_bits)
-            sec.append("# 自动生成: %s | %s | %s | %s | 取消下一行注释即启用" % (app, cn, desc, note_label))
             prefix = "" if app in enabled else "#"
-            sec.append('%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, " ".join(pkg_names)))
+            block = [
+                "# 自动生成: %s | %s | %s | %s | 取消下一行注释即启用" % (app, cn, desc, note_label),
+                '%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, " ".join(pkg_names)),
+            ]
+            cat = meta.get("cat", "其他")
+            by_cat.setdefault(cat, []).extend(block)
+        ordered = [c for c in CATEGORY_ORDER if c in by_cat]
+        ordered += [c for c in by_cat if c not in CATEGORY_ORDER]
+        for cat in ordered:
+            if sec:
+                sec.append("")
+            sec.append(CAT_HEADER_FMT % cat)
+            sec.extend(by_cat[cat])
         content = "\n".join(sec) if sec else "# （当前 store 中没有该通道的第三方软件）"
         regenerate_marked(sh_path, SH_BEGIN, SH_END, content, dry_run=dry_run)
 
