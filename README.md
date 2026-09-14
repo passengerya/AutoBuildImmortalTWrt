@@ -61,8 +61,8 @@
 ④ 容器内 build24.sh（或 build25.sh）七环节：
    1. source shell/custom-packages.sh —— 读取你开启的软件包列表
    2. 写入 PPPoE 配置（UI 输入）
-   3. 拷贝内嵌 store：cp /home/build/immortalwrt/store/run/<架构>/* → extra-packages/
-   4. prepare-packages.sh：解压 .run + 收集 ipk → 更新 ImageBuilder 的 packages/ 软件包目录
+   3. 拷贝内嵌 store（按通道过滤）：24.10 构建只拷非 25_/25- 前缀的 .run，25.12 只拷 25_/25- 前缀的 .run，外加应用 ipk/apk 子目录 → extra-packages/
+   4. prepare-packages.sh（或 apk 版）：只解压本通道 .run + 收集 ipk/apk → 更新 ImageBuilder 的 packages/ 软件包目录
    5. 拼接 PACKAGES = 官方基础包 + 你开启的第三方包（openclash/ssrp 额外下载内核）
    6. make image ... V=s 构建（完整日志 tee 保存，失败即红灯）
    7. 固件上传到对应 Release（Autobuild-x86-64 等，fail_on_unmatched_files 防静默失败）
