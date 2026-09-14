@@ -18,7 +18,7 @@
 # 自动生成: nikki | Nikki代理 | 代理工具(与 clashoo 冲突勿同时开启) | v1.26.1 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-nikki luci-i18n-nikki-ru luci-i18n-nikki-zh-cn luci-i18n-nikki-zh-tw mihomo-alpha mihomo-meta nikki"
 # 自动生成: openclash | OpenClash | Clash 代理客户端 | v0.47.156 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
 # 自动生成: openwrt-daede | eBPF代理 | 基于 eBPF 的高性能透明代理(dae/daed) | 2026.09.13 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES dae daed luci-app-daede vmlinux-btf"
 # 自动生成: passwall | PassWall | 代理工具(自带依赖) | 26.9.9-1 | 取消下一行注释即启用
@@ -34,7 +34,7 @@
 # 自动生成: bandix | 流量监控 | Bandix 实时流量监控与统计 | 0.11.0-r25 | 取消下一行注释即启用
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES bandix luci-app-bandix"
 # 自动生成: easytier | 异地组网 | EasyTier 点对点组网工具 | v2.6.4 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
 # 自动生成: luci-app-tailscale-community | Tailscale组网 | Tailscale 组网(Community 版) | 4.2.3-r1 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn"
 # 自动生成: lucky | Lucky大吉 | 端口转发/反向代理/内网穿透 | 2.20.2-r13 | 取消下一行注释即启用
@@ -44,31 +44,31 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-lucky lucky"
 
 # ───────────────────── 广告与DNS ─────────────────────
 # 自动生成: adguardhome | 本地DNS去广告 | AdGuardHome 广告拦截与 DNS 服务 | v0.107.79 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-adguardhome-all"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-adguardhome-all"
 # 自动生成: mosdns | DNS分流 | 高性能 DNS 分流(DoH/DoQ 等) | v5.3.4-r14 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES geo2txt luci-app-mosdns luci-i18n-mosdns-zh-cn mosdns v2ray-geoip v2ray-geosite"
 
 # ───────────────────── 文件与存储 ─────────────────────
 # 自动生成: dufs | 文件服务器 | 轻量文件服务器(静态托管/上传/WebDAV) | 0.46.0-r1 | 取消下一行注释即启用
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # 自动生成: openlist2 | 网盘聚合 | OpenList2 网盘聚合(Alist 变体) | v4.2.6 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openlist2 luci-i18n-openlist2-zh-cn openlist2"
 # 自动生成: quickfile | 文件管理 | 轻量网页文件管理器(与 luci-app-run 冲突勿同时开启) | 1.0.16 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-quickfile luci-i18n-quickfile-zh-cn quickfile"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-quickfile luci-i18n-quickfile-zh-cn quickfile"
 
 # ───────────────────── 系统与界面 ─────────────────────
 # 自动生成: argon | Argon主题 | 简洁主题, 支持明暗自动切换 | 2.4.3-r20250722 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn luci-theme-argon"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn luci-theme-argon"
 # 自动生成: luci-app-advancedplus | 高级设置 | 进阶设置(与 argon-config 冲突勿同时开启) | 1.8.7-r20251116 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus luci-i18n-advancedplus-zh-cn"
 # 自动生成: luci-app-aurora-config | Aurora配置中心 | Aurora 主题配置中心(配色/布局/字体/品牌/主题商店) | 1.2.0-r20260808 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-aurora-config luci-i18n-aurora-config-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-aurora-config luci-i18n-aurora-config-zh-cn"
 # 自动生成: luci-app-uninstall | 高级卸载 | 彻底卸载插件的工具 | v1.2.6 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-uninstall"
 # 自动生成: luci-theme-aurora | 极光主题 | 极光主题界面 | 1.3.0-r20260830 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
 # 自动生成: luci-theme-shadcn | Shadcn主题 | 现代 Shadcn 风格界面主题 | 0.5.0-r20260830 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-shadcn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-shadcn"
 
 # ───────────────────── 设备管理 ─────────────────────
 # 自动生成: luci-app-amlogic | 晶晨宝盒 | 晶晨机顶盒管理(仅 ARM64 平台) | 3.1.321-r1 | 取消下一行注释即启用
@@ -116,7 +116,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # ARP 绑定 - 防 ARP 欺骗
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-arpbind-zh-cn"
 # banIP - 入侵 IP 自动封禁
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-banip-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-banip-zh-cn"
 # BCP38 - 反向路径过滤（防地址欺骗）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-bcp38-zh-cn"
 # BMX7 - 无线网状网络协议
@@ -130,7 +130,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # dcwapd - 双频无线 AP 守护
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-dcwapd-zh-cn"
 # DDNS-Go - 动态域名解析
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-go-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-go-zh-cn"
 # DDNS - 动态 DNS 客户端
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-zh-cn"
 # DSL - 调制解调器状态监控
@@ -144,7 +144,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # Keepalived - 高可用（VRRP）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-keepalived-zh-cn"
 # LLDP - 链路层邻居发现
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-lldpd-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-lldpd-zh-cn"
 # ModemBand - 4G/5G 模组频段锁定
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-modemband-zh-cn"
 # Mosquitto - MQTT 消息代理
@@ -152,11 +152,11 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # MWAN3 - 多线负载均衡
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-mwan3-zh-cn"
 # nftables QoS - 限速
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-nft-qos-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-nft-qos-zh-cn"
 # nlbwmon - 局域网流量统计
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-nlbwmon-zh-cn"
 # OLSR - 服务通告
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-olsr-services-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-olsr-services-zh-cn"
 # OLSR - 拓扑可视化
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-olsr-viz-zh-cn"
 # OLSR - 网状路由协议
@@ -184,7 +184,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # SQM - 智能队列管理（抗缓冲膨胀）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-sqm-zh-cn"
 # TimeWOL - 定时网络唤醒
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-timewol-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-timewol-zh-cn"
 # Travelmate - 无线中继自动漫游
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-travelmate-zh-cn"
 # UPnP - 端口自动映射
@@ -192,7 +192,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # usteer - WiFi 频段引导漫游
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-usteer-zh-cn"
 # vnStat - 流量统计
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-vnstat2-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-vnstat2-zh-cn"
 # Watchcat - 网络看门狗（断网重启）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-watchcat-zh-cn"
 # WiFi 定时开关
@@ -220,7 +220,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # EoIP - 以太网隧道（MikroTik 兼容）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-eoip-zh-cn"
 # frp 客户端 - 内网穿透
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-frpc-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-frpc-zh-cn"
 # frp 服务端 - 内网穿透
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-frps-zh-cn"
 # n2n - P2P VPN 组网
@@ -317,7 +317,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # cpulimit - CPU 使用率限制
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cpulimit-zh-cn"
 # CloudShark - 远程抓包分析
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cshark-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cshark-zh-cn"
 # 仪表盘 - LuCI 首页仪表盘
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-dashboard-zh-cn"
 # 邮件通知 - EmailRelay 发送
@@ -337,13 +337,13 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
 # Radicale - 日历/通讯录服务器（CalDAV/CardDAV）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-radicale-zh-cn"
 # 内存清理 - 释放缓存
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ramfree-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ramfree-zh-cn"
 # RustDesk - 远程桌面服务器
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-rustdesk-server-zh-cn"
 # 系统统计 - 图表监控
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-statistics-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-statistics-zh-cn"
 # ttyd - Web 终端
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ttyd-zh-cn"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ttyd-zh-cn"
 # uHTTPd - Web 服务器配置
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-uhttpd-zh-cn"
 # vlmcsd - KMS 激活服务器
