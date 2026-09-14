@@ -1,33 +1,4 @@
 {
-  "managed_dirs": [
-    "adguardhome",
-    "argon",
-    "bandix",
-    "clashoo",
-    "dufs",
-    "easytier",
-    "homeproxy",
-    "luci-app-advancedplus",
-    "luci-app-amlogic",
-    "luci-app-nekobox",
-    "luci-app-store",
-    "luci-app-tailscale-community",
-    "luci-app-uninstall",
-    "luci-theme-aurora",
-    "lucky",
-    "momo",
-    "mosdns",
-    "nikki",
-    "openclash",
-    "openlist2",
-    "openwrt-daede",
-    "passwall",
-    "passwall2",
-    "quickfile",
-    "rtp2httpd",
-    "sing-box",
-    "ssrp-mihomo",
-    "xray-core"
-  ],
-  "misses": {}
+  "misses": {},
+  "stale": []
 }

@@ -36,8 +36,9 @@ store 中的所有文件均来源于 passengerya/CloudRunFilesBuilder。
   - shell/custom-packages.sh 生成段: ipk 通道(24.10)编译用 package 列表
   - shell/apk-custom-packages.sh 生成段: apk 通道(25.12)编译用 package 列表
   - 生成段中已取消注释(启用)的应用在后续同步中保留启用状态
-  - 连续 3 次同步都不在上游 Release 中的应用视为下线, 自动删除其
-    .run 文件与软件包目录(手动放入的 ipk 目录不受影响)
+  - 连续 3 次同步不在上游 Release 的应用标记为「停更」: .run 与软件包目录
+    全部保留, 仅在 README 表格版本列与生成段注释中附加"上游停更(保留旧版)"
+    说明; 应用重新出现在 Release 时自动解除标记
 
 用法:
   BUILDER_REPO=owner/repo GITHUB_TOKEN=xxx python3 store/sync_run_files.py
@@ -61,6 +62,7 @@ ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 RUN_DIR = os.path.join(ROOT, "store", "run")
 ARCH_DIRS = {"x86": os.path.join(RUN_DIR, "x86"), "arm64": os.path.join(RUN_DIR, "arm64")}
 STATE_FILE = os.path.join(ROOT, "store", ".sync-state.json")
+STALE_THRESHOLD = 3  # 连续 N 次不在上游 Release 即标记停更
 
 # 阶段三维护的生成段落标记(手动修改生成段会在下次同步被覆盖)
 MARK_BEGIN = "<!-- AUTO-SOFTWARE-TABLE:START (Sync Store 自动维护, 勿手动修改) -->"
@@ -414,12 +416,13 @@ def load_state():
                 return json.load(f)
         except Exception:
             pass
-    return {"managed_dirs": [], "misses": {}}
+    return {"misses": {}, "stale": []}
 
 
 def save_state(state, dry_run=False):
     if dry_run:
         return
+    state.pop("managed_dirs", None)  # 旧版下线删除方案的遗留字段, 清理
     with open(STATE_FILE, "w", encoding="utf-8", newline="\n") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
@@ -447,17 +450,18 @@ def read_enabled_apps(path):
     return enabled
 
 
-def prune_stale_runs(valid_names, state, dry_run=False):
-    """连续 3 次同步都不在上游 Release 中的 .run 视为下线应用, 删除文件与其软件包目录。
+def mark_stale_runs(valid_names, state, dry_run=False):
+    """连续 3 次同步不在上游 Release 的应用标记为「停更」: 保留文件与列表, 仅在注释中附加停更说明。
 
-    valid_names: 本次 Release 的全部 .run 资产名(无法获取 Release 时应传 None 跳过剪枝)。
+    停更应用重新出现在 Release 时自动解除标记(恢复更新)。
+
+    valid_names: 本次 Release 的全部 .run 资产名(无法获取 Release 时应传 None 跳过判定)。
     """
     if valid_names is None:
-        print("[维护] 未获取到上游 Release 信息, 跳过下线清理")
+        print("[维护] 未获取到上游 Release 信息, 跳过停更判定")
         return
     misses = state.setdefault("misses", {})
-    old_managed = set(state.get("managed_dirs", []))
-    new_managed = {app_dir_of(n) for n in valid_names}
+    stale = set(state.get("stale", []))
     for arch, d in sorted(ARCH_DIRS.items()):
         if not os.path.isdir(d):
             continue
@@ -466,26 +470,17 @@ def prune_stale_runs(valid_names, state, dry_run=False):
             if not f.endswith(".run") or not os.path.isfile(p):
                 continue
             if f in valid_names:
-                misses.pop(f, None)
+                if misses.pop(f, None) is not None:
+                    print("[%s] 应用恢复更新: %s" % (arch, f))
+                if f in stale:
+                    stale.discard(f)
+                    print("[%s] 解除停更标记: %s" % (arch, f))
                 continue
             misses[f] = misses.get(f, 0) + 1
-            if misses[f] >= 3:
-                print("[%s] 连续 3 次不在 Release, 删除下线应用: %s" % (arch, f))
-                if not dry_run:
-                    os.remove(p)
-                    for dd in ARCH_DIRS.values():
-                        t = os.path.join(dd, app_dir_of(f))
-                        if os.path.isdir(t):
-                            shutil.rmtree(t, ignore_errors=True)
-    # 已不在任何 Release 资产中的旧应用目录, 一并清理(仅清理脚本管理过的目录)
-    for app in sorted(old_managed - new_managed):
-        for dd in ARCH_DIRS.values():
-            t = os.path.join(dd, app)
-            if os.path.isdir(t):
-                print("[维护] 删除下线应用目录: %s/%s" % (os.path.basename(dd), app))
-                if not dry_run:
-                    shutil.rmtree(t, ignore_errors=True)
-    state["managed_dirs"] = sorted(new_managed)
+            if misses[f] >= STALE_THRESHOLD and f not in stale:
+                stale.add(f)
+                print("[%s] 标记停更(连续 %d 次不在 Release): %s" % (arch, STALE_THRESHOLD, f))
+    state["stale"] = sorted(stale)
 
 
 def maintain_lists(summary, valid_names, dry_run=False):
@@ -498,7 +493,8 @@ def maintain_lists(summary, valid_names, dry_run=False):
     """
     print("== 阶段三: 维护软件列表 ==")
     state = load_state()
-    prune_stale_runs(valid_names, state, dry_run=dry_run)
+    mark_stale_runs(valid_names, state, dry_run=dry_run)
+    stale_keys = {(channel_of(n), app_dir_of(n)) for n in state.get("stale", [])}
 
     # 汇总表: 按(应用, 通道)排序
     rows = []
@@ -519,6 +515,8 @@ def maintain_lists(summary, valid_names, dry_run=False):
         src = meta.get("src", "—")
         ch_label = "ipk (24.10)" if channel == "ipk" else "apk (25.12)"
         archs_label = " / ".join(archs)
+        if (channel, app) in stale_keys:
+            ver = (ver + " ⚠️上游停更") if ver else "⚠️上游停更"
         lines.append("| %s | %s | %s | %s | %s | %s | %s |" % (app, cn, ch_label, ver, archs_label, desc, src))
     table = "\n".join(lines)
     regenerate_marked(os.path.join(ROOT, "store", "README.md"), MARK_BEGIN, MARK_END, table, dry_run=dry_run)
@@ -539,8 +537,13 @@ def maintain_lists(summary, valid_names, dry_run=False):
             meta = APP_META.get(app, {})
             cn = meta.get("cn", "")
             desc = meta.get("desc", "")
-            ver_label = " %s" % ver if ver else ""
-            sec.append("# 自动生成: %s | %s | %s |%s | 取消下一行注释即启用" % (app, cn, desc, ver_label))
+            note_bits = []
+            if ver:
+                note_bits.append(ver)
+            if (channel, app) in stale_keys:
+                note_bits.append("上游停更(保留旧版)")
+            note_label = " ".join(note_bits)
+            sec.append("# 自动生成: %s | %s | %s | %s | 取消下一行注释即启用" % (app, cn, desc, note_label))
             prefix = "" if app in enabled else "#"
             sec.append('%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, " ".join(pkg_names)))
         content = "\n".join(sec) if sec else "# （当前 store 中没有该通道的第三方软件）"

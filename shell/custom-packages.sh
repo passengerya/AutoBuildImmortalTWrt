@@ -58,6 +58,6 @@
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-rtp2httpd luci-i18n-rtp2httpd-zh-cn rtp2httpd"
 # 自动生成: sing-box | Sing-box内核 | 通用代理内核 | v1.14.0 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
-# 自动生成: ssrp-mihomo | SSRP代理 | SSR-Plus 代理工具(mihomo 内核) | | 取消下一行注释即启用
+# 自动生成: ssrp-mihomo | SSRP代理 | SSR-Plus 代理工具(mihomo 内核) |  | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng dns2socks dns2socks-rust dns2tcp hysteria ipt2socks ipt2socks-rs libopenssl3 libudns lua-neturl luci-app-ssr-plus luci-i18n-ssr-plus-zh-cn microsocks mosdns naiveproxy redsocks2 shadow-tls shadowsocks-libev-ss-server shadowsocks-rust-sslocal shadowsocks-rust-ssmanager shadowsocks-rust-ssserver shadowsocks-rust-ssservice shadowsocks-rust-ssurl shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-client tcping tcping-simple trojan trojan-plus tuic-client v2ray-plugin xray-core"
 # ============ 自动维护结束 ============
