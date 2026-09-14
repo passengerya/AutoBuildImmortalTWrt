@@ -1,11 +1,11 @@
-# AutoBuildImmortalTWrt
+# AutoBuildTWrt
 
 > 基于 CI 的 ImageBuilder 工作流，自动化构建 ImmortalWrt 固件。
 > 本项目为个人自建项目，以 [wukongdaily/AutoBuildImmortalWrt](https://github.com/wukongdaily/AutoBuildImmortalWrt) 为蓝本，并在此基础上实现了**内嵌 store 软件同步方案**。
 
 **⚠️ 重要声明**：本项目为个人独立维护的第三方项目（脚本），与 ImmortalWrt 官方没有关联。项目中使用了 ImmortalWrt 官方 ImageBuilder 工具打包生成固件，但用户自行定制产生的任何 bug，均不代表 ImmortalWrt 官方固件的 bug；相关问题请勿在 ImmortalWrt 群内反馈。
 
-[![GitHub](https://img.shields.io/github/license/passengerya/AutoBuildImmortalTWrt.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/passengerya/AutoBuildImmortalTWrt/blob/master/LICENSE)
+[![GitHub](https://img.shields.io/github/license/passengerya/AutoBuildTWrt.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/passengerya/AutoBuildTWrt/blob/master/LICENSE)
 
 ---
 
@@ -86,7 +86,7 @@
 ## 📂 项目结构
 
 ```
-AutoBuildImmortalTWrt/
+AutoBuildTWrt/
 ├── .github/workflows/    # 16 个机型构建工作流 + sync-store.yml 同步工作流
 ├── store/                # 内嵌第三方软件包库（Sync Store 工作流每日自动更新）
 │   ├── sync_run_files.py # 同步脚本：.run 拉取 + ipk 解压 + 列表维护三阶段
@@ -123,7 +123,7 @@ AutoBuildImmortalTWrt/
 ## ✅ 如何开启软件（两种来源）
 
 **来源一：上游同步的第三方软件**（每日自动同步进内嵌 store，自动生成段）
-1. 确认该软件在 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 里有对应目录（x86 看 `x86/`，ARM 看 `arm64/`）；
+1. 确认该软件在 [store/run](https://github.com/passengerya/AutoBuildTWrt/tree/master/store/run) 里有对应目录（x86 看 `x86/`，ARM 看 `arm64/`）；
 2. 编辑 `shell/custom-packages.sh`（24.10）或 `shell/apk-custom-packages.sh`（25.12），**把对应行行首的 `#` 去掉**，例如：
 3. 两个开关文件的列表都按用途分了大分类（`代理工具 / 网络服务 / 广告与DNS / 文件与存储 / 系统与界面 / 设备管理`，imm 固定段还有 `穿透与组网 / 下载与媒体 / 系统管理 / 校园网`），可按分类标题快速定位要开启的软件；分类由同步自动维护，新增软件会自动归入对应分类。
 
