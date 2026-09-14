@@ -1,180 +1,154 @@
-# [新手指导](https://github.com/wukongdaily/AutoBuildImmortalWrt/wiki) 👈🏻
 # AutoBuildImmortalTWrt
 
-**⚠️ 重要声明**
+> 基于 CI 的 ImageBuilder 工作流，自动化构建 ImmortalWrt 固件。
+> 本项目为个人自建项目，以 [wukongdaily/AutoBuildImmortalWrt](https://github.com/wukongdaily/AutoBuildImmortalWrt) 为蓝本，并在此基础上实现了**内嵌 store 软件同步方案**。
 
-> **本项目为个人独立维护的第三方项目(脚本)，与 ImmortalWrt 官方没有关联。** <br>
-> **项目中使用了 ImmortalWrt 官方 ImageBuilder 工具打包生成固件。<br>
-> 但用户自行定制产生的任何 bug，均不代表 ImmortalWrt 官方固件的 bug**<br>
-> **为了不给 ImmortalWrt 上游维护者增加额外负担和麻烦，所有相关问题请勿在 ImmortalWrt 群内反馈**。  <br>
-> **建议各位在本项目 [Discussions](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/discussions) 中提问或讨论**
+**⚠️ 重要声明**：本项目为个人独立维护的第三方项目（脚本），与 ImmortalWrt 官方没有关联。项目中使用了 ImmortalWrt 官方 ImageBuilder 工具打包生成固件，但用户自行定制产生的任何 bug，均不代表 ImmortalWrt 官方固件的 bug；相关问题请勿在 ImmortalWrt 群内反馈。
 
+[![GitHub](https://img.shields.io/github/license/passengerya/AutoBuildImmortalTWrt.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/passengerya/AutoBuildImmortalTWrt/blob/master/LICENSE)
 
 ---
 
-[![GitHub](https://img.shields.io/github/license/passengerya/AutoBuildImmortalTWrt.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/passengerya/AutoBuildImmortalTWrt/blob/master/LICENSE)
-![GitHub Stars](https://img.shields.io/github/stars/passengerya/AutoBuildImmortalTWrt.svg?style=flat&logo=appveyor&label=Stars&logo=github)
-![GitHub Forks](https://img.shields.io/github/forks/passengerya/AutoBuildImmortalTWrt.svg?style=flat&logo=appveyor&label=Forks&logo=github)
-
 ## 🤔 这是什么？
-基于 CI 的 ImageBuilder 工作流，用于自动化构建 ImmortalWrt 固件。
-> 1、支持自定义固件大小 默认1GB 不建议设置过大 推荐1G-2G 更大需求可通过自定义插件里的扩容插件自行扩容<br>
-> 2、支持可选预安装docker（可选）支持在UI上勾选是否集成商店 （24.10.6以下）<br>
-> 3、支持按需增加[第三方软件](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run)（内嵌 store 每日自动同步上游最新软件包）如何集成 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209 <br>
-> 4、点击这里查看👉🏻[全部支持的机型列表](https://github.com/passengerya/AutoBuildImmortalTWrt/blob/master/SUPPORT.md) 👈🏻<br>
-> 5、在UI上 新增luci版本的可选项，默认最新版25.12.x https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/426<br>
-> 6、支持设置管理地址的ip 比如192.168.100.1 这里强调 这项功能仅针对多网口机型 单网口的逻辑还是自动获取ip模式（dhcp）无固定ip<br>
-> 7、对于[插件追新的用户 建议前往run项目 下载run后 ](https://github.com/wukongdaily/RunFilesBuilder/discussions/41)用命令sh xx.run 覆盖安装 <br>
-> 8、支持24.10.x 、25.12.x 等版本 （包括x86-64-ISO、x86-64、rockchip、全志sunxi、无线路由器）
 
-## [基本用法步骤](https://github.com/wukongdaily/AutoBuildImmortalWrt/wiki) 👈🏻
-1、fork本项目<br>
-2、在fork后的项目中 点击【action】 找到需要的工作流后 run-workflow<br>
+一个**免费、开源的 OpenWrt/ImmortalWrt 固件自动构建项目**：fork 本仓库、点击几下鼠标，GitHub Actions 就会在云端构建出定制固件，无需本地编译环境。
 
-## 虚拟机建议用哪条工作流？下图↓
-<img width="30%" height="30%" alt="image" src="https://github.com/user-attachments/assets/743027e0-584a-4842-bfb3-0dff22de9101" /> <br>
-虚拟机用户建议直接构建ISO镜像 此过程分2个阶段 阶段一构建固件imm 阶段二将其封装iso格式的安装器 总计耗时大约7-8分钟  <br>
-ISO在虚拟机引导后 跑码结束后，在命令行输入 `ddd` 按提示 完成虚拟磁盘的写入（安装immortalwrt到虚拟磁盘）<br>
-这样做也比较灵活 避免了格式转换和解压 同时还可以指定安装某个磁盘 而安装后的磁盘剩余空间也能加以利用。<br>
-详细的解说 可以参考我的另一个项目 [img-installer](https://github.com/wukongdaily/armbian-installer) 
+核心特性：
 
-## 虚拟机用户使用的教学⬇️ ISO 
-[![操作步骤](https://img.shields.io/badge/YouTube-123456?logo=youtube&labelColor=ff0000)](https://www.youtube.com/watch?v=ftSE3wSJi64) [![Bilibili](https://img.shields.io/badge/Bilibili-123456?logo=bilibili&logoColor=fff&labelColor=fb7299)](https://www.bilibili.com/video/BV1enxMzwEUe/) <br>
-【绿联NAS安装immortalwrt25.12】https://www.bilibili.com/video/BV1AyZcBsErt/
+| 特性 | 说明 |
+| --- | --- |
+| 🧩 第三方软件每日自动同步 | 上游软件包由 [CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder) 每日打包，本仓库 Sync Store 工作流每天自动同步进内嵌 `store/` 目录，**新版本软件第二天即可用** |
+| ⚙️ 按需集成软件 | 在 `shell/custom-packages.sh` 中**取消注释**即可把软件装进固件（详见下文"如何开启第三方软件"） |
+| 📦 自定义固件大小 | 默认 1GB，可选 1G~4G；也可用分区扩容插件自行扩容 |
+| 🐳 可选预装 Docker | UI 勾选即可 |
+| 🏪 可选集成 iStore 商店 | UI 布尔开关控制 |
+| 🌐 支持 24.10.x 与 25.12.x | 两条软件通道严格分离（opkg/ipk 与 apk），互不干扰 |
+| 📡 多机型 | x86-64（含 ISO 安装器）、rockchip、armsr-armv8、sunxi、N1、无线路由器（MTK/高通/博通）、树莓派等，详见 [SUPPORT.md](SUPPORT.md) |
+| 🔧 自定义管理地址 | 多网口机型可在 UI 设置 LAN IP（默认 `192.168.100.1`） |
 
-## 物理机如何使用ISO格式的安装器(本项目独有)
-- Windows 建议将ISO拷贝到制作好的[Ventoy](https://www.ventoy.net/cn/index.html)<br>
-  <img width="303" height="90" alt="image" src="https://github.com/user-attachments/assets/34d73e24-3100-4c0d-a904-5f114d867793" />
+## 🔄 具体实现流程
 
-- macOS 使用[balenaEtcher](https://etcher.balena.io/) 将ISO 刻录到U盘即可<br>
-  <img width="285" height="188" alt="image" src="https://github.com/user-attachments/assets/cd09be82-2670-404c-8878-c2782b3c8374" />
+本项目是一条**三仓库流水线**的最后一环，第三方软件的完整流转过程如下：
 
-- 将制作好的U盘提前插在软路由 然后启动后 按Del 或者F12、F11、F7等 使U盘成为第一启动盘
+### 阶段一：软件同步（每日全自动）
 
-  <img width="50%" alt="image" src="https://github.com/user-attachments/assets/a1ba38d9-305c-41dd-8441-9e61c3dcae1d" /> <br>
-- 启动后在命令行输入 ddd 按提示 完成硬盘的写入 硬盘剩余空间你还可以自动分配<br>
-- ISO安装器原理 点这里查看 https://github.com/wukongdaily/img-installer
-- [视频教学参考 精准空降到 13:46 ](https://www.bilibili.com/video/BV1DQXVYFENr/?share_source=copy_web&vd_source=0bb92241fb28a55c32c2e5132116b594&t=826)
-- 这是一个值得推广的方法 真心希望你能吸收、学会 费了很大心思的。没错、从今往后 [任何OpenWrt都有安装器了](https://github.com/wukongdaily/img-installer)
+```
+① CloudRunFilesBuilder（第一层，独立仓库）
+   41 个工作流每天北京时间 6:00 起错峰运行：
+   拉取上游最新 ipk → makeself 打包成 .run 自解压包 → 上传当日 Release
 
-## 如何查询imm仓库内有哪些插件
-https://mirrors.sjtug.sjtu.edu.cn/immortalwrt/releases/24.10.4/packages/x86_64/luci/
-## 如何查询imm仓库外目前可以集成哪些插件
-见本仓库 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 目录（x86 看 `x86/`，ARM 看 `arm64/`）
-> 具体方法 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209
-## 【视频教程】如何集成第三方插件？
-https://www.youtube.com/watch?v=KN6AJYV1hBI <br>
-https://www.youtube.com/watch?v=7i6BQeitUtE
+        ↓ 本仓库 Sync Store 工作流（每天北京时间 7:00）
 
-## 项目结构
+② 内嵌 store/（本仓库内，由同步脚本维护）
+   store/sync_run_files.py 两阶段：
+   阶段 A：从最新 Release 同步 .run 到 store/run/x86/、store/run/arm64/
+           （24.10 ipk 版与 25.12 apk 版按通道共存，各自保留一个变体；
+            同前缀旧版本自动清理，不触碰 ipk 子目录）
+   阶段 B：把每个 .run 自解压包里的 ipk 解压到应用同名子目录
+           （如 dufs-0.46.0-r1_x86_64.run → store/run/x86/dufs/*.ipk）
+   完成后自动 git 提交推送
+```
+
+### 阶段二：固件构建（手动触发）
+
+```
+③ 构建工作流（16 个，按机型手动触发，UI 填写参数）
+   参数示例：luci 版本 / 管理 IP / 软件包空间 / 集成 iStore / 集成 Docker / PPPoE
+
+   ↓ docker 挂载本仓库目录到 ImageBuilder 容器
+     store/ shell/ 机型配置文件 files/ → /home/build/immortalwrt/
+
+④ 容器内 build24.sh（或 build25.sh）七环节：
+   1. source shell/custom-packages.sh —— 读取你开启的软件包列表
+   2. 写入 PPPoE 配置（UI 输入）
+   3. 拷贝内嵌 store：cp /home/build/immortalwrt/store/run/<架构>/* → extra-packages/
+   4. prepare-packages.sh：解压 .run + 收集 ipk → 更新 ImageBuilder 的 packages/ 软件包目录
+   5. 拼接 PACKAGES = 官方基础包 + 你开启的第三方包（openclash/ssrp 额外下载内核）
+   6. make image ... V=s 构建（完整日志 tee 保存，失败即红灯）
+   7. 固件上传到对应 Release（Autobuild-x86-64 等，fail_on_unmatched_files 防静默失败）
+
+⑤ 产出：OpenWrt/ImmortalWrt 固件包（.img.gz / rootfs.tar.gz / ISO 安装器）
+```
+
+### 两条软件通道（严格分离）
+
+| | 24.10 通道（ipk/opkg） | 25.12 通道（apk） |
+| --- | --- | --- |
+| 软件开关文件 | `shell/custom-packages.sh` | `shell/apk-custom-packages.sh` |
+| 构建脚本 | 各机型的 `build24.sh` | 各机型的 `build25.sh` |
+| store 中 .run 前缀 | 无前缀 / `24_` | `25_` / `25-` |
+| 安装命令（.run 内） | `opkg install *.ipk` | `apk add --allow-untrusted *.apk` |
+
+## 📂 项目结构
 
 ```
 AutoBuildImmortalTWrt/
 ├── .github/workflows/    # 16 个机型构建工作流 + sync-store.yml 同步工作流
 ├── store/                # 内嵌第三方软件包库（Sync Store 工作流每日自动更新）
-│   ├── sync_run_files.py # 同步脚本: .run 拉取 + ipk 解压两阶段
+│   ├── sync_run_files.py # 同步脚本：.run 拉取 + ipk 解压两阶段
 │   └── run/x86/  run/arm64/   # .run 根目录 + 应用同名 ipk 子目录
-├── shell/                # 公共脚本(所有机型共用)
-│   ├── custom-packages.sh        # 24.10 第三方软件开关(取消注释开启)
+├── shell/                # 公共脚本（所有机型共用）
+│   ├── custom-packages.sh        # 24.10 第三方软件开关（取消注释开启）
 │   ├── apk-custom-packages.sh    # 25.12 第三方软件开关
-│   └── prepare-packages.sh       # 解 .run/收集 ipk -> packages/ 软件包目录
+│   ├── prepare-packages.sh       # 解 .run / 收集 ipk → packages/ 软件包目录
+│   └── switch_repository.sh      # 软件源切换预留
 ├── x86-64/  rockchip/  armsr-armv8/  sunxi-cortexa53/
-├── n1/  mediatek-filogic/  raspberrypi/   # 各机型: build24/25.sh + 配置文件
-├── files/  arch/  model/  glinet/         # 固件定制/架构/机型清单
-└── PACKAGES.md  SUPPORT.md                # 软件支持列表/机型支持列表
+├── n1/  mediatek-filogic/  raspberrypi/   # 各机型：build24/25.sh + imm 配置文件
+├── files/  arch/  model/  glinet/         # 固件开机定制 / 架构 / 机型清单
+└── PACKAGES.md  SUPPORT.md                # 软件支持列表 / 机型支持列表
 ```
 
-## 第三方软件包机制（内嵌 store）
-本项目的第三方软件（ImmortalWrt 官方仓库以外的软件包）全部经由 `passengerya/CloudRunFilesBuilder` 拉取上游：
-1. **上游拉取**：CloudRunFilesBuilder 每日构建，同步上游项目最新 ipk 并打包成 `.run` 自解压包，发布到当日 Release；
-2. **同步到内嵌 store**：本仓库 `Sync Store` 工作流每天 23:00 UTC（北京时间 7:00）把 Release 里的 `.run` 同步到 `store/run/x86/`、`store/run/arm64/`，并把每个 `.run` 里的 ipk **解压到应用同名子目录**（软件包目录），提交到 master；
-3. **构建时更新软件包目录**：构建工作流把 `store/` 挂载进 ImageBuilder 容器，构建脚本拷贝 `store/run/<arch>/*` 到 `extra-packages/`，`shell/prepare-packages.sh` 解包并把所有 ipk 更新进 `packages/` 软件包目录；
-4. **个人选择开启软件**：在 [shell/custom-packages.sh](shell/custom-packages.sh)（24.10/ipk 通道）或 [shell/apk-custom-packages.sh](shell/apk-custom-packages.sh)（25.12/apk 通道）中**取消对应行的注释**即可把软件加进固件；
-5. **打包进固件**：`make image` 按 `PACKAGES` 列表构建最终 OpenWrt 固件包。
+## 🚀 使用方法
 
+1. **fork 本仓库**（或直接使用）；
+2. 进入 **Actions** 页面，选择对应机型的工作流（例如 `Build 24.10.x x86-64`），点击 **Run workflow** 填写参数：
+
+   | 输入项 | 说明 |
+   | --- | --- |
+   | luci_version | 选择 ImmortalWrt 版本（24.10.0 ~ 24.10.6 / 25.12.x） |
+   | custom_router_ip | 路由器管理地址（仅多网口机型生效） |
+   | profile | 软件包空间大小：1G / 2G / 3G / 4G |
+   | enable_store | 是否集成 iStore 商店 |
+   | include_docker | 是否预装 Docker |
+   | enable_pppoe + 账号密码 | 是否配置 PPPoE 拨号 |
+
+3. 构建约 8~15 分钟，产物自动上传到 Release（各机型的 tag 如 `Autobuild-x86-64`），下载刷机即可。
+
+> 第三方软件无需手动处理：只要在 `custom-packages.sh`（或 apk 版）里取消了注释，构建时自动从内嵌 store 装进固件。
+
+## ✅ 如何开启第三方软件
+
+1. 确认该软件在 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 里有对应目录（x86 看 `x86/`，ARM 看 `arm64/`）；
+2. 编辑 `shell/custom-packages.sh`（24.10）或 `shell/apk-custom-packages.sh`（25.12），**把对应行行首的 `#` 去掉**，例如：
+
+```bash
+# 端口转发 lucky 大吉
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-lucky lucky"   # ← 去掉行首 # 即开启
 ```
-CloudRunFilesBuilder（上游 ipk → .run → 每日 Release）
-        ↓ Sync Store 工作流（每日 7:00）
-store/run/{x86,arm64}/（.run + 解压出的软件包目录）
-        ↓ 构建时挂载 + prepare-packages.sh
-ImageBuilder packages/ 软件包目录
-        ↓ custom-packages.sh 注释开关
-make image → OpenWrt 固件包
-```
 
-## 旁路由的用户必读
-近期不少用户修改配置文件中的默认ip地址，误认为这个工作流可以直接设置旁路ip。这是巨大的误解，这样设置就乱套了。<br>
-旁路的逻辑应该是单网口模式。根据下面的固件属性可知。单网口默认采取`dhcp模式`，用户应当自行在上一级路由器查看给imm路由器分配的ip地址。
-然后通过该ip来访问imm后台页面，在imm后台页面中，根据自己主路由的网段 自行配置旁路的ip地址。
+3. 触发构建，软件即被打进固件。
 
-## 正常路由模式必读
-所谓正常的路由模式 就是指多网口用户，多网口的意思就是2个或者2个以上网口的情况。<br>
-一般wan用于拨号或者自动获取ip <br>
-而其他lan一般是给其他设备分配dhcp<br>
-这种情况下 你可以修改路由器的默认ip  `192.168.100.1` 比如你可以修改为`192.168.80.1 ` 诸如此类。<br>
-没错，修改此ip 无非就是为了避免跟光猫或者跟家庭中的其他路由器网段冲突。大多数用户，无需更改。
+> 注意：24.10 与 25.12 是两条独立通道，请按固件版本改对应的开关文件；部分软件存在冲突组合（如 `luci-app-run` 与 `quickfile`、`clashoo` 与 `nikki`），注释里已标注，请勿同时开启。
 
-## 该固件默认属性？(必读)
-- 该固件刷入【单网口设备】默认采用DHCP模式,自动获得ip。类似NAS的做法
-- 该固件刷入【多网口设备】默认WAN口采用DHCP模式，LAN 口ip为  `192.168.100.1` <br>其中eth0为WAN 其余网口均为LAN
-- 若用户在工作流中勾选了拨号信息 则WAN口模式为pppoe拨号模式。
-- 建议拨号用户使用之前重启一次光猫。
-- 综合上述特点，【单网口设备】应该先接路由器，先在上级路由器查看一下它的ip 再访问。
-- 上述特点 你都可以通过 `99-custom.sh` 配置和调整
+## 📟 固件默认行为
 
-## 特别说明
-本项目构建的固件 为了易用性 wan口防火墙规则入站 是开启的，待首次调试完毕后，建议自行关闭。操作方法如下
-网络——防火墙—— wan 的入站 选择拒绝 然后保存并应用即可。更多讨论[ 请参考这个话题](https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/341)
-<img width="3860" height="870" alt="image" src="https://github.com/user-attachments/assets/d826bccd-f0df-4d4a-877d-b711b81fcf1a" />
-同时此项设置的相关代码详见 `files/etc/uci-defaults/99-custom.sh` 行首
+- **单网口设备**：默认 DHCP 自动获取 IP（旁路由模式），在上级路由器查看分配的地址访问后台；
+- **多网口设备**：WAN 口 DHCP（勾选 PPPoE 则为拨号），LAN IP 为 UI 中设置的值（默认 `192.168.100.1`），eth0 为 WAN；
+- 后台：用户名 `root`，密码无（建议首次登录后设置）；
+- 为易用性，WAN 口防火墙入站默认开启，调试完毕后建议自行关闭（网络 → 防火墙 → WAN 入站改为拒绝）；
+- 以上行为均可通过 `files/etc/uci-defaults/99-custom.sh` 调整。
 
-## ❤️其它GitHub Action项目推荐🌟 （建议收藏）⬇️
-- ### [一键生成run插件] 🆕
-- https://github.com/wukongdaily/RunFilesBuilder<br>
-- ### [一键生成docker离线镜像] 🆕
-- https://github.com/wukongdaily/DockerTarBuilder<br>
-- ### [OpenWrt/Armbian IMG安装器ISO] 🆕
-- https://github.com/wukongdaily/img-installer
+## 🌿 分支策略
 
+- **master**：生产分支（默认）。`Sync Store` 定时同步与 Actions 手动构建都只使用 master 上的文件，改动需合并到 master 才生效；
+- **dev**：开发分支，验证通过后合并 master。
 
-## ❤️如何构建docker版ImmortalWrt（建议收藏）⬇️
-https://wkdaily.cpolar.cn/15
-# 🎉鸣谢
+## 🎉 鸣谢
 
-感谢以下项目与作者对本项目的贡献与灵感 ❤️
+本项目基于以下项目与作者，感谢他们的贡献与灵感：
 
-<div align="left">
-
-<a href="https://github.com/immortalwrt"><img src="https://avatars.githubusercontent.com/immortalwrt?v=4&s=80" width="80" height="80" alt="immortalwrt" /></a>
-<a href="https://github.com/Openwrt-Passwall"><img src="https://avatars.githubusercontent.com/Openwrt-Passwall?v=4&s=80" width="80" height="80" alt="Openwrt-Passwall" /></a>
-<a href="https://github.com/sirpdboy"><img src="https://avatars.githubusercontent.com/sirpdboy?v=4&s=80" width="80" height="80" alt="sirpdboy" /></a>
-<a href="https://github.com/ophub"><img src="https://avatars.githubusercontent.com/ophub?v=4&s=80" width="80" height="80" alt="ophub" /></a>
-<a href="https://github.com/linkease"><img src="https://avatars.githubusercontent.com/linkease?v=4&s=80" width="80" height="80" alt="linkease" /></a>
-
-<a href="https://github.com/coolsnowwolf"><img src="https://avatars.githubusercontent.com/coolsnowwolf?v=4&s=80" width="80" height="80" alt="coolsnowwolf" /></a>
-<a href="https://github.com/stackia"><img src="https://avatars.githubusercontent.com/stackia?v=4&s=80" width="80" height="80" alt="stackia" /></a>
-<a href="https://github.com/kiddin9"><img src="https://avatars.githubusercontent.com/kiddin9?v=4&s=80" width="80" height="80" alt="kiddin9" /></a>
-<a href="https://github.com/sbwml"><img src="https://avatars.githubusercontent.com/sbwml?v=4&s=80" width="80" height="80" alt="sbwml" /></a>
-<a href="https://github.com/kenzok8"><img src="https://avatars.githubusercontent.com/kenzok8?v=4&s=80" width="80" height="80" alt="kenzok8" /></a>
-
-<a href="https://github.com/timsaya"><img src="https://avatars.githubusercontent.com/timsaya?v=4&s=80" width="80" height="80" alt="timsaya" /></a>
-<a href="https://github.com/AdguardTeam"><img src="https://avatars.githubusercontent.com/AdguardTeam?v=4&s=80" width="80" height="80" alt="AdguardTeam" /></a>
-<a href="https://github.com/Thaolga"><img src="https://avatars.githubusercontent.com/Thaolga?v=4&s=80" width="80" height="80" alt="Thaolga" /></a>
-<a href="https://github.com/eamonxg"><img src="https://avatars.githubusercontent.com/eamonxg?v=4&s=80" width="80" height="80" alt="eamonxg" /></a>
-<a href="https://github.com/nikkinikki-org"><img src="https://avatars.githubusercontent.com/nikkinikki-org?v=4&s=80" width="80" height="80" alt="nikkinikki-org" /></a>
-
-<a href="https://github.com/gdy666"><img src="https://avatars.githubusercontent.com/gdy666?v=4&s=80" width="80" height="80" alt="gdy666" /></a>
-<a href="https://github.com/lwb1978"><img src="https://avatars.githubusercontent.com/lwb1978?v=4&s=80" width="80" height="80" alt="lwb1978" /></a>
-<a href="https://github.com/Tokisaki-Galaxy"><img src="https://avatars.githubusercontent.com/Tokisaki-Galaxy?v=4&s=80" width="80" height="80" alt="Tokisaki-Galaxy" /></a>
-<a href="https://github.com/QiuSimons"><img src="https://avatars.githubusercontent.com/QiuSimons?v=4&s=80" width="80" height="80" alt="QiuSimons" /></a>
-<a href="https://xz.vumstar.com/"><img src="https://xz.vumstar.com/static/img/logo.png" width="80" height="80" alt="wukongdaily" /></a>
-
-</div>
-
-## ❤️赞助作者 ⬇️⬇️
-
-<a href="https://wkdaily.cpolar.top/01" target="_blank">
-  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
-       alt="Buy Me A Coffee"
-       style="width:15%; height:auto;">
-</a>
+- [wukongdaily/AutoBuildImmortalWrt](https://github.com/wukongdaily/AutoBuildImmortalWrt) —— 项目蓝本
+- [wukongdaily/RunFilesBuilder](https://github.com/wukongdaily/RunFilesBuilder) —— run 打包方案
+- [ImmortalWrt](https://github.com/immortalwrt) —— 固件与 ImageBuilder
+- [passengerya/CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder) —— 上游软件同步层
+- 以及各第三方软件的上游作者（passwall、mosdns、sirpdboy、ophub、linkease 等，详见 [PACKAGES.md](PACKAGES.md)）
