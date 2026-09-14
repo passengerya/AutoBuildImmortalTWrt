@@ -125,6 +125,7 @@ AutoBuildImmortalTWrt/
 **来源一：上游同步的第三方软件**（每日自动同步进内嵌 store，自动生成段）
 1. 确认该软件在 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 里有对应目录（x86 看 `x86/`，ARM 看 `arm64/`）；
 2. 编辑 `shell/custom-packages.sh`（24.10）或 `shell/apk-custom-packages.sh`（25.12），**把对应行行首的 `#` 去掉**，例如：
+3. 两个开关文件的列表都按用途分了大分类（`代理工具 / 网络服务 / 广告与DNS / 文件与存储 / 系统与界面 / 设备管理`，imm 固定段还有 `穿透与组网 / 下载与媒体 / 系统管理 / 校园网`），可按分类标题快速定位要开启的软件；分类由同步自动维护，新增软件会自动归入对应分类。
 
 ```bash
 # 自动生成: lucky | Lucky大吉 | 端口转发/反向代理/内网穿透 | 2.20.2-r13 | 取消下一行注释即启用
