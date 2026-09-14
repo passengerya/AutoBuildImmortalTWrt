@@ -20,7 +20,7 @@
 基于 CI 的 ImageBuilder 工作流，用于自动化构建 ImmortalWrt 固件。
 > 1、支持自定义固件大小 默认1GB 不建议设置过大 推荐1G-2G 更大需求可通过自定义插件里的扩容插件自行扩容<br>
 > 2、支持可选预安装docker（可选）支持在UI上勾选是否集成商店 （24.10.6以下）<br>
-> 3、支持按需增加[第三方软件](https://github.com/passengerya/store/blob/master/README.md)  如何集成 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209 <br>
+> 3、支持按需增加[第三方软件](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run)（内嵌 store 每日自动同步上游最新软件包）如何集成 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209 <br>
 > 4、点击这里查看👉🏻[全部支持的机型列表](https://github.com/passengerya/AutoBuildImmortalTWrt/blob/master/SUPPORT.md) 👈🏻<br>
 > 5、在UI上 新增luci版本的可选项，默认最新版25.12.x https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/426<br>
 > 6、支持设置管理地址的ip 比如192.168.100.1 这里强调 这项功能仅针对多网口机型 单网口的逻辑还是自动获取ip模式（dhcp）无固定ip<br>
@@ -65,6 +65,24 @@ https://mirrors.sjtug.sjtu.edu.cn/immortalwrt/releases/24.10.4/packages/x86_64/l
 ## 【视频教程】如何集成第三方插件？
 https://www.youtube.com/watch?v=KN6AJYV1hBI <br>
 https://www.youtube.com/watch?v=7i6BQeitUtE
+
+## 项目结构
+
+```
+AutoBuildImmortalTWrt/
+├── .github/workflows/    # 16 个机型构建工作流 + sync-store.yml 同步工作流
+├── store/                # 内嵌第三方软件包库（Sync Store 工作流每日自动更新）
+│   ├── sync_run_files.py # 同步脚本: .run 拉取 + ipk 解压两阶段
+│   └── run/x86/  run/arm64/   # .run 根目录 + 应用同名 ipk 子目录
+├── shell/                # 公共脚本(所有机型共用)
+│   ├── custom-packages.sh        # 24.10 第三方软件开关(取消注释开启)
+│   ├── apk-custom-packages.sh    # 25.12 第三方软件开关
+│   └── prepare-packages.sh       # 解 .run/收集 ipk -> packages/ 软件包目录
+├── x86-64/  rockchip/  armsr-armv8/  sunxi-cortexa53/
+├── n1/  mediatek-filogic/  raspberrypi/   # 各机型: build24/25.sh + 配置文件
+├── files/  arch/  model/  glinet/         # 固件定制/架构/机型清单
+└── PACKAGES.md  SUPPORT.md                # 软件支持列表/机型支持列表
+```
 
 ## 第三方软件包机制（内嵌 store）
 本项目的第三方软件（ImmortalWrt 官方仓库以外的软件包）全部经由 `passengerya/CloudRunFilesBuilder` 拉取上游：
