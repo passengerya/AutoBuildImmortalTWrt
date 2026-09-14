@@ -624,7 +624,7 @@ def main():
 
     valid_names = None  # 上游 Release 的全部 .run 资产名; 无法获取时为 None(跳过下线清理)
     try:
-        releases = api_get("https://api.github.com/repos/%s/releases?per_page=1" % BUILDER_REPO)
+        releases = api_get("https://api.github.com/repos/%s/releases?per_page=5" % BUILDER_REPO)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             print("源仓库 %s 暂无 release, 跳过 run 同步。" % BUILDER_REPO)
@@ -634,8 +634,15 @@ def main():
         if not releases:
             print("源仓库 %s 暂无 release, 跳过 run 同步。" % BUILDER_REPO)
         else:
-            release = releases[0]
-            print("使用 release: %s (%s)" % (release["tag_name"], release.get("name", "")))
+            # 从最近 5 个 Release 中选 .run 资产最多的那个:
+            # 每日 cron 分批上传时最新的 Release 可能还在填充中(资产不全),
+            # 直接取最新会把多数应用误判为缺失(误标停更)。
+            def run_count(r):
+                return sum(1 for a in r.get("assets", []) if a["name"].endswith(".run"))
+            release = max(releases, key=run_count)
+            print("使用 release: %s (%s, %d 个 .run 资产; 最新为 %s, %d 个)"
+                  % (release["tag_name"], release.get("name", ""), run_count(release),
+                     releases[0]["tag_name"], run_count(releases[0])))
 
             assets = [a for a in release.get("assets", []) if a["name"].endswith(".run")]
             valid_names = {a["name"] for a in assets}
