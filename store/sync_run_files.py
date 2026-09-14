@@ -68,6 +68,39 @@ MARK_END = "<!-- AUTO-SOFTWARE-TABLE:END -->"
 SH_BEGIN = "# ============ 以下由 Sync Store 自动维护(根据内嵌 store 实际内容生成) ============"
 SH_END = "# ============ 自动维护结束 ============"
 
+# 软件元数据: 应用名 -> {中文名, 用途, 来源}
+# 阶段三生成开关文件注释与 store/README 软件列表时使用; 新增应用时在这里补充一行
+APP_META = {
+    "adguardhome": {"cn": "本地DNS去广告", "desc": "AdGuardHome 广告拦截与 DNS 服务", "src": "AdguardTeam/AdGuardHome"},
+    "argon": {"cn": "Argon主题", "desc": "简洁主题, 支持明暗自动切换", "src": "ImmortalWrt 官方源"},
+    "bandix": {"cn": "流量监控", "desc": "Bandix 实时流量监控与统计", "src": "timsaya/luci-app-bandix + dl.openwrt.ai"},
+    "clashoo": {"cn": "Clashoo代理", "desc": "代理工具(与 nikki 冲突勿同时开启)", "src": "kenzok8/openwrt-clashoo"},
+    "dufs": {"cn": "文件服务器", "desc": "轻量文件服务器(静态托管/上传/WebDAV)", "src": "sigoden/dufs"},
+    "easytier": {"cn": "异地组网", "desc": "EasyTier 点对点组网工具", "src": "EasyTier/luci-app-easytier"},
+    "homeproxy": {"cn": "代理平台", "desc": "现代代理平台(基于 sing-box)", "src": "immortalwrt/homeproxy"},
+    "luci-app-advancedplus": {"cn": "高级设置", "desc": "进阶设置(与 argon-config 冲突勿同时开启)", "src": "sirpdboy/luci-app-advancedplus"},
+    "luci-app-amlogic": {"cn": "晶晨宝盒", "desc": "晶晨机顶盒管理(仅 ARM64 平台)", "src": "ophub/luci-app-amlogic"},
+    "luci-app-nekobox": {"cn": "NekoBox代理", "desc": "NekoBox 代理工具", "src": "Thaolga/openwrt-nekobox"},
+    "luci-app-store": {"cn": "iStore商店", "desc": "iStore 应用商店", "src": "linkease/istore"},
+    "luci-app-tailscale-community": {"cn": "Tailscale组网", "desc": "Tailscale 组网(Community 版)", "src": "Tokisaki-Galaxy/luci-app-tailscale-community"},
+    "luci-app-uninstall": {"cn": "高级卸载", "desc": "彻底卸载插件的工具", "src": "上游 run 直采"},
+    "luci-theme-aurora": {"cn": "极光主题", "desc": "极光主题界面", "src": "eamonxg/luci-theme-aurora"},
+    "lucky": {"cn": "Lucky大吉", "desc": "端口转发/反向代理/内网穿透", "src": "gdy666/lucky via dl.openwrt.ai"},
+    "momo": {"cn": "Momo代理", "desc": "基于 sing-box 的透明代理", "src": "nikkinikki-org/OpenWrt-momo"},
+    "mosdns": {"cn": "DNS分流", "desc": "高性能 DNS 分流(DoH/DoQ 等)", "src": "sbwml/luci-app-mosdns"},
+    "nikki": {"cn": "Nikki代理", "desc": "代理工具(与 clashoo 冲突勿同时开启)", "src": "nikkinikki-org/OpenWrt-nikki"},
+    "openclash": {"cn": "OpenClash", "desc": "Clash 代理客户端", "src": "vernesong/OpenClash"},
+    "openlist2": {"cn": "网盘聚合", "desc": "OpenList2 网盘聚合(Alist 变体)", "src": "sbwml/luci-app-openlist2"},
+    "openwrt-daede": {"cn": "eBPF代理", "desc": "基于 eBPF 的高性能透明代理(dae/daed)", "src": "kenzok8/openwrt-daede"},
+    "passwall": {"cn": "PassWall", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall"},
+    "passwall2": {"cn": "PassWall2", "desc": "代理工具(自带依赖)", "src": "Openwrt-Passwall/openwrt-passwall2"},
+    "quickfile": {"cn": "文件管理", "desc": "轻量网页文件管理器(与 luci-app-run 冲突勿同时开启)", "src": "sbwml/luci-app-quickfile"},
+    "rtp2httpd": {"cn": "IPTV转发", "desc": "IPTV 流媒体转发服务器", "src": "stackia/rtp2httpd"},
+    "sing-box": {"cn": "Sing-box内核", "desc": "通用代理内核", "src": "SagerNet/sing-box"},
+    "ssrp-mihomo": {"cn": "SSRP代理", "desc": "SSR-Plus 代理工具(mihomo 内核)", "src": "fw876/helloworld"},
+    "xray-core": {"cn": "Xray内核", "desc": "Xray 代理内核", "src": "XTLS/Xray-core"},
+}
+
 # arm64 变体优先级(仅当本仓库中该应用没有既有文件时生效):
 # generic 兼容性最好, 其次是 cortex-a53 优化构建、a53, 最后是纯 aarch64
 ARM64_VARIANT_PRIORITY = ["generic", "cortex-a53", "a53", ""]
@@ -476,15 +509,17 @@ def maintain_lists(summary, valid_names, dry_run=False):
             continue
         rows.append((app, channel, info["version"], archs, pkgs))
 
-    lines = ["| 软件 | 通道 | 版本 | 架构 | 包含软件包 |",
-             "| --- | --- | --- | --- | --- |"]
+    # store/README.md 软件列表: 软件 | 中文名 | 通道 | 版本 | 架构 | 用途 | 来源
+    lines = ["| 软件 | 中文名 | 通道 | 版本 | 架构 | 用途 | 来源 |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
     for app, channel, ver, archs, pkgs in rows:
+        meta = APP_META.get(app, {})
+        cn = meta.get("cn", "—")
+        desc = meta.get("desc", "—")
+        src = meta.get("src", "—")
         ch_label = "ipk (24.10)" if channel == "ipk" else "apk (25.12)"
         archs_label = " / ".join(archs)
-        pkgs_label = ", ".join(pkgs)
-        if len(pkgs_label) > 160:
-            pkgs_label = pkgs_label[:157] + "..."
-        lines.append("| %s | %s | %s | %s | %s |" % (app, ch_label, ver, archs_label, pkgs_label))
+        lines.append("| %s | %s | %s | %s | %s | %s | %s |" % (app, cn, ch_label, ver, archs_label, desc, src))
     table = "\n".join(lines)
     regenerate_marked(os.path.join(ROOT, "store", "README.md"), MARK_BEGIN, MARK_END, table, dry_run=dry_run)
 
@@ -501,10 +536,13 @@ def maintain_lists(summary, valid_names, dry_run=False):
             pkg_names = sorted({pkg_name_fn(p) for p in pkgs if pkg_name_fn(p)})
             if not pkg_names:
                 continue
-            pkgs_list = " ".join(pkg_names)
-            sec.append("# 自动生成: %s（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）" % app)
+            meta = APP_META.get(app, {})
+            cn = meta.get("cn", "")
+            desc = meta.get("desc", "")
+            ver_label = " %s" % ver if ver else ""
+            sec.append("# 自动生成: %s | %s | %s |%s | 取消下一行注释即启用" % (app, cn, desc, ver_label))
             prefix = "" if app in enabled else "#"
-            sec.append('%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, pkgs_list))
+            sec.append('%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, " ".join(pkg_names)))
         content = "\n".join(sec) if sec else "# （当前 store 中没有该通道的第三方软件）"
         regenerate_marked(sh_path, SH_BEGIN, SH_END, content, dry_run=dry_run)
 
