@@ -31,6 +31,14 @@ store 中的所有文件均来源于 passengerya/CloudRunFilesBuilder。
     人工新增 ipk 请放入独立的、与 .run 推导名不冲突的目录, 不会被删除
   - 不含 .ipk 的 .run(如 25.12 的 apk 包)不生成目录
 
+阶段三(软件列表维护):
+  - store/README.md 的软件列表表格: 每次同步按 store 实际内容自动增加/删除行
+  - shell/custom-packages.sh 生成段: ipk 通道(24.10)编译用 package 列表
+  - shell/apk-custom-packages.sh 生成段: apk 通道(25.12)编译用 package 列表
+  - 生成段中已取消注释(启用)的应用在后续同步中保留启用状态
+  - 连续 3 次同步都不在上游 Release 中的应用视为下线, 自动删除其
+    .run 文件与软件包目录(手动放入的 ipk 目录不受影响)
+
 用法:
   BUILDER_REPO=owner/repo GITHUB_TOKEN=xxx python3 store/sync_run_files.py
   --dry-run: 只打印将执行的操作, 不下载、不删除
@@ -52,6 +60,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 RUN_DIR = os.path.join(ROOT, "store", "run")
 ARCH_DIRS = {"x86": os.path.join(RUN_DIR, "x86"), "arm64": os.path.join(RUN_DIR, "arm64")}
+STATE_FILE = os.path.join(ROOT, "store", ".sync-state.json")
+
+# 阶段三维护的生成段落标记(手动修改生成段会在下次同步被覆盖)
+MARK_BEGIN = "<!-- AUTO-SOFTWARE-TABLE:START (Sync Store 自动维护, 勿手动修改) -->"
+MARK_END = "<!-- AUTO-SOFTWARE-TABLE:END -->"
+SH_BEGIN = "# ============ 以下由 Sync Store 自动维护(根据内嵌 store 实际内容生成) ============"
+SH_END = "# ============ 自动维护结束 ============"
 
 # arm64 变体优先级(仅当本仓库中该应用没有既有文件时生效):
 # generic 兼容性最好, 其次是 cortex-a53 优化构建、a53, 最后是纯 aarch64
@@ -242,9 +257,13 @@ def extract_ipks_from_runs(dry_run=False):
 
     来源即 CloudRunFilesBuilder 拉取的 .run 包本身(store 中所有文件均来源于 builder);
     解压生成的应用目录每次同步会重建, 不含 .ipk 的 .run(如 25.12 apk 包)不生成目录。
+
+    返回汇总: {(通道, 应用): {"version": str, "archs": set, "ipks": set, "apks": set}}
+    供阶段三(软件列表维护)使用。
     """
     print("== 开始从 .run 解压 ipk 到应用子目录(软件包目录) ==")
     count = 0
+    summary = {}
     for arch, d in sorted(ARCH_DIRS.items()):
         if not os.path.isdir(d):
             continue
@@ -256,6 +275,10 @@ def extract_ipks_from_runs(dry_run=False):
             if not app:
                 print("[%s] 无法推导应用名, 跳过: %s" % (arch, f))
                 continue
+            key = (channel_of(f), app)
+            info = summary.setdefault(key, {"version": "", "archs": set(), "ipks": set(), "apks": set()})
+            info["archs"].add(arch)
+            info["version"] = version_str_of(f) or info["version"]
             tmp = os.path.join(d, ".unpack-" + app)
             try:
                 result = subprocess.run(
@@ -265,29 +288,228 @@ def extract_ipks_from_runs(dry_run=False):
                 if result.returncode != 0:
                     print("[%s] 解压失败(返回码 %s), 跳过: %s" % (arch, result.returncode, f))
                     continue
-                ipks = []
+                ipks, apks = [], []
                 for root, _, names in os.walk(tmp):
                     for n in names:
                         if n.endswith(".ipk"):
                             ipks.append(os.path.join(root, n))
+                        elif n.endswith(".apk"):
+                            apks.append(os.path.join(root, n))
+                for src in apks:
+                    info["apks"].add(os.path.basename(src))
                 if not ipks:
-                    print("[%s] 不含 ipk(apk 包或空包), 跳过: %s" % (arch, f))
+                    print("[%s] 不含 ipk(apk 包或空包), 跳过目录生成: %s" % (arch, f))
                     continue
                 dest = os.path.join(d, app)
                 if dry_run:
                     print("[%s] %s -> %s/ (%d 个 ipk)" % (arch, f, app, len(ipks)))
                     count += len(ipks)
+                    for src in ipks:
+                        info["ipks"].add(os.path.basename(src))
                     continue
                 if os.path.isdir(dest):
                     shutil.rmtree(dest)
                 os.makedirs(dest)
                 for src in ipks:
                     shutil.copy2(src, dest)
+                    info["ipks"].add(os.path.basename(src))
                     print("[%s] ipk 解压: %s/%s" % (arch, app, os.path.basename(src)))
                     count += 1
             finally:
                 shutil.rmtree(tmp, ignore_errors=True)
     print("ipk 解压结束, 共处理 %d 个文件。" % count)
+    return summary
+
+
+def version_str_of(name):
+    """从 .run 文件名提取版本号文本(展示用), 无版本返回空串。"""
+    s = name[:-4] if name.endswith(".run") else name
+    s = RE_LEADING_PREFIX.sub("", s)
+    m = RE_VERSION.search(s)
+    return m.group(0) if m else ""
+
+
+def ipk_package_name(name):
+    """从 ipk 文件名提取包名(去掉末尾架构段与版本段)。"""
+    s = name[:-4] if name.endswith(".ipk") else name
+    s = re.sub(r"_(?:all|x86_64|aarch64(?:_[a-z0-9.-]+)?|arm_[a-z0-9._-]+|mips(?:el)?_[\w.-]+|i386(?:_[\w.-]+)?)$", "", s)
+    parts = s.split("_")
+    for i in range(len(parts) - 1, 0, -1):
+        if re.match(r"^(?:v?\d|r\d|git-)", parts[i]):
+            return "_".join(parts[:i])
+    return s
+
+
+def apk_package_name(name):
+    """从 apk 文件名提取包名。apk 命名: <名>-<版本>-<修订>-<架构>.apk(连字符多段式, 从左扫描首个版本段)"""
+    s = name[:-4] if name.endswith(".apk") else name
+    s = re.sub(r"[_-](?:x86_64|aarch64(?:_[a-z0-9.-]+)?|arm_[a-z0-9._-]+|all)$", "", s)
+    parts = re.split(r"[-_]", s)
+    for i in range(1, len(parts)):
+        if re.match(r"^(?:v?\d|r\d)", parts[i]):
+            return re.sub(r"[_-]+", "-", "-".join(parts[:i]))
+    return re.sub(r"[_-]+", "-", s)
+
+
+def regenerate_marked(path, begin, end, content, dry_run=False):
+    """在 path 文件的两处标记之间替换为 content; 首次使用时追加到文件末尾。"""
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        b = src.find(begin)
+        e = src.find(end)
+        if b != -1 and e != -1 and e > b:
+            new = src[:b] + begin + "\n" + content + "\n" + end + src[e + len(end):]
+            if not dry_run:
+                with open(path, "w", encoding="utf-8", newline="\n") as f:
+                    f.write(new)
+            print("[维护] %s: 更新生成列表" % os.path.basename(path))
+            return
+        new = src.rstrip("\n") + "\n\n" + begin + "\n" + content + "\n" + end + "\n"
+        if not dry_run:
+            with open(path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(new)
+        print("[维护] %s: 首次追加生成列表" % os.path.basename(path))
+    else:
+        print("[维护] %s: 文件不存在, 跳过" % path)
+
+
+def load_state():
+    if os.path.isfile(STATE_FILE):
+        try:
+            with open(STATE_FILE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"managed_dirs": [], "misses": {}}
+
+
+def save_state(state, dry_run=False):
+    if dry_run:
+        return
+    with open(STATE_FILE, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def read_enabled_apps(path):
+    """解析 shell 文件生成段中已启用(取消注释)的应用集合。"""
+    if not os.path.isfile(path):
+        return set()
+    with open(path, encoding="utf-8") as f:
+        src = f.read()
+    b, e = src.find(SH_BEGIN), src.find(SH_END)
+    if b == -1 or e == -1 or e <= b:
+        return set()
+    section = src[b + len(SH_BEGIN):e]
+    enabled = set()
+    cur_app = None
+    for line in section.splitlines():
+        m = re.match(r"^# 自动生成: (\S+)", line)
+        if m:
+            cur_app = m.group(1)
+            continue
+        if line.startswith("CUSTOM_PACKAGES=") and cur_app:
+            enabled.add(cur_app)
+            cur_app = None
+    return enabled
+
+
+def prune_stale_runs(valid_names, state, dry_run=False):
+    """连续 3 次同步都不在上游 Release 中的 .run 视为下线应用, 删除文件与其软件包目录。
+
+    valid_names: 本次 Release 的全部 .run 资产名(无法获取 Release 时应传 None 跳过剪枝)。
+    """
+    if valid_names is None:
+        print("[维护] 未获取到上游 Release 信息, 跳过下线清理")
+        return
+    misses = state.setdefault("misses", {})
+    old_managed = set(state.get("managed_dirs", []))
+    new_managed = {app_dir_of(n) for n in valid_names}
+    for arch, d in sorted(ARCH_DIRS.items()):
+        if not os.path.isdir(d):
+            continue
+        for f in sorted(os.listdir(d)):
+            p = os.path.join(d, f)
+            if not f.endswith(".run") or not os.path.isfile(p):
+                continue
+            if f in valid_names:
+                misses.pop(f, None)
+                continue
+            misses[f] = misses.get(f, 0) + 1
+            if misses[f] >= 3:
+                print("[%s] 连续 3 次不在 Release, 删除下线应用: %s" % (arch, f))
+                if not dry_run:
+                    os.remove(p)
+                    for dd in ARCH_DIRS.values():
+                        t = os.path.join(dd, app_dir_of(f))
+                        if os.path.isdir(t):
+                            shutil.rmtree(t, ignore_errors=True)
+    # 已不在任何 Release 资产中的旧应用目录, 一并清理(仅清理脚本管理过的目录)
+    for app in sorted(old_managed - new_managed):
+        for dd in ARCH_DIRS.values():
+            t = os.path.join(dd, app)
+            if os.path.isdir(t):
+                print("[维护] 删除下线应用目录: %s/%s" % (os.path.basename(dd), app))
+                if not dry_run:
+                    shutil.rmtree(t, ignore_errors=True)
+    state["managed_dirs"] = sorted(new_managed)
+
+
+def maintain_lists(summary, valid_names, dry_run=False):
+    """阶段三: 根据内嵌 store 实际内容维护软件列表汇总。
+
+    1. store/README.md 的软件列表表格(增加/删除行)
+    2. shell/custom-packages.sh 生成段(ipk 通道, 24.10 编译用 package 列表)
+    3. shell/apk-custom-packages.sh 生成段(apk 通道, 25.12 编译用 package 列表)
+    4. 下线应用的 .run/软件包目录清理(连续 3 次不在上游 Release)
+    """
+    print("== 阶段三: 维护软件列表 ==")
+    state = load_state()
+    prune_stale_runs(valid_names, state, dry_run=dry_run)
+
+    # 汇总表: 按(应用, 通道)排序
+    rows = []
+    for (channel, app), info in sorted(summary.items()):
+        archs = sorted(info["archs"])
+        pkgs = sorted(info["ipks"]) if channel == "ipk" else sorted(info["apks"])
+        if not pkgs:
+            continue
+        rows.append((app, channel, info["version"], archs, pkgs))
+
+    lines = ["| 软件 | 通道 | 版本 | 架构 | 包含软件包 |",
+             "| --- | --- | --- | --- | --- |"]
+    for app, channel, ver, archs, pkgs in rows:
+        ch_label = "ipk (24.10)" if channel == "ipk" else "apk (25.12)"
+        archs_label = " / ".join(archs)
+        pkgs_label = ", ".join(pkgs)
+        if len(pkgs_label) > 160:
+            pkgs_label = pkgs_label[:157] + "..."
+        lines.append("| %s | %s | %s | %s | %s |" % (app, ch_label, ver, archs_label, pkgs_label))
+    table = "\n".join(lines)
+    regenerate_marked(os.path.join(ROOT, "store", "README.md"), MARK_BEGIN, MARK_END, table, dry_run=dry_run)
+
+    # 编译 package 列表: 分通道写入两个 shell 文件
+    # 注意: 行内必须是包名(去版本/架构段), 否则 opkg/apk install 找不到包
+    for channel, sh_path in (("ipk", os.path.join(ROOT, "shell", "custom-packages.sh")),
+                             ("apk", os.path.join(ROOT, "shell", "apk-custom-packages.sh"))):
+        enabled = read_enabled_apps(sh_path)
+        pkg_name_fn = ipk_package_name if channel == "ipk" else apk_package_name
+        sec = []
+        for app, ch, ver, archs, pkgs in rows:
+            if ch != channel:
+                continue
+            pkg_names = sorted({pkg_name_fn(p) for p in pkgs if pkg_name_fn(p)})
+            if not pkg_names:
+                continue
+            pkgs_list = " ".join(pkg_names)
+            sec.append("# 自动生成: %s（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）" % app)
+            prefix = "" if app in enabled else "#"
+            sec.append('%sCUSTOM_PACKAGES="$CUSTOM_PACKAGES %s"' % (prefix, pkgs_list))
+        content = "\n".join(sec) if sec else "# （当前 store 中没有该通道的第三方软件）"
+        regenerate_marked(sh_path, SH_BEGIN, SH_END, content, dry_run=dry_run)
+
+    save_state(state, dry_run=dry_run)
+    print("阶段三完成: 汇总 %d 个(应用, 通道)条目" % len(rows))
 
 
 def main():
@@ -295,6 +517,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="只打印将执行的操作, 不下载、不删除")
     args = parser.parse_args()
 
+    valid_names = None  # 上游 Release 的全部 .run 资产名; 无法获取时为 None(跳过下线清理)
     try:
         releases = api_get("https://api.github.com/repos/%s/releases?per_page=1" % BUILDER_REPO)
     except urllib.error.HTTPError as e:
@@ -310,13 +533,17 @@ def main():
             print("使用 release: %s (%s)" % (release["tag_name"], release.get("name", "")))
 
             assets = [a for a in release.get("assets", []) if a["name"].endswith(".run")]
+            valid_names = {a["name"] for a in assets}
             if not assets:
                 print("该 release 中没有 .run 资产, 跳过 run 同步。")
             else:
                 run_sync(assets, args.dry_run)
 
-    # ipk 阶段独立执行: 即使上游暂无新 .run 资产, 也要保持软件包目录与 .run 一致
-    extract_ipks_from_runs(dry_run=args.dry_run)
+    # 阶段二独立执行: 即使上游暂无新 .run 资产, 也要保持软件包目录与 .run 一致
+    summary = extract_ipks_from_runs(dry_run=args.dry_run)
+
+    # 阶段三: 维护 store/README 软件列表与 shell 编译 package 列表
+    maintain_lists(summary, valid_names, dry_run=args.dry_run)
 
     print("同步完成。" if not args.dry_run else "dry-run 结束, 未做任何修改。")
 

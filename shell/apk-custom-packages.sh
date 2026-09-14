@@ -189,3 +189,26 @@
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-wifischedule-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xinetd-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xlnetacc-zh-cn"
+
+# ============ 以下由 Sync Store 自动维护(根据内嵌 store 实际内容生成) ============
+# 自动生成: argon（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn luci-theme-argon"
+# 自动生成: luci-app-store（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store luci-lib-taskd luci-lib-xterm taskd"
+# 自动生成: mosdns（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES geo2txt luci-app-mosdns luci-i18n-mosdns-zh-cn mosdns v2ray-geoip v2ray-geosite"
+# 自动生成: openclash（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
+# 自动生成: openwrt-daede（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES dae daed luci-app-daede vmlinux-btf"
+# 自动生成: passwall（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng dns2socks geoview hysteria luci-app-passwall luci-i18n-passwall-zh-cn tcping v2ray-geoip v2ray-geosite xray-core"
+# 自动生成: passwall2（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng geoview luci-app-passwall2 luci-i18n-passwall2-zh-cn shadowsocks-rust-sslocal shadowsocks-rust-ssserver shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-client tcping v2ray-geoip v2ray-geosite v2ray-plugin"
+# 自动生成: quickfile（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-quickfile luci-i18n-quickfile-zh-cn quickfile"
+# 自动生成: sing-box（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
+# 自动生成: ssrp-mihomo（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng dns2tcp ipt2socks lua-neturl luci-app-ssr-plus luci-i18n-ssr-plus-zh-cn shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server"
+# ============ 自动维护结束 ============

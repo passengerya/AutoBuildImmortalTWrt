@@ -213,3 +213,60 @@
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xinetd-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xlnetacc-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-zerotier-zh-cn"
+
+# ============ 以下由 Sync Store 自动维护(根据内嵌 store 实际内容生成) ============
+# 自动生成: adguardhome（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-adguardhome-all"
+# 自动生成: argon（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn luci-theme-argon"
+# 自动生成: bandix（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES bandix luci-app-bandix luci-i18n-bandix-zh-cn"
+# 自动生成: clashoo（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES clashoo luci-app-clashoo luci-i18n-clashoo-zh-cn"
+# 自动生成: dufs（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES dufs luci-app-dufs luci-i18n-dufs-zh-cn"
+# 自动生成: easytier（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
+# 自动生成: homeproxy（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-homeproxy luci-i18n-homeproxy-zh-cn sing-box-tiny"
+# 自动生成: luci-app-advancedplus（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus luci-i18n-advancedplus-zh-cn"
+# 自动生成: luci-app-amlogic（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-amlogic luci-i18n-amlogic-zh-cn"
+# 自动生成: luci-app-nekobox（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-nekobox"
+# 自动生成: luci-app-store（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store luci-lib-taskd luci-lib-xterm taskd"
+# 自动生成: luci-app-tailscale-community（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn"
+# 自动生成: luci-app-uninstall（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-uninstall"
+# 自动生成: luci-theme-aurora（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
+# 自动生成: lucky（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-lucky lucky"
+# 自动生成: momo（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-momo luci-i18n-momo-zh-cn momo"
+# 自动生成: mosdns（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES geo2txt luci-app-mosdns luci-i18n-mosdns-zh-cn mosdns v2ray-geoip v2ray-geosite"
+# 自动生成: nikki（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-nikki luci-i18n-nikki-ru luci-i18n-nikki-zh-cn luci-i18n-nikki-zh-tw mihomo-alpha mihomo-meta nikki"
+# 自动生成: openclash（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
+# 自动生成: openlist2（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openlist2 luci-i18n-openlist2-zh-cn openlist2"
+# 自动生成: openwrt-daede（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES dae daed luci-app-daede vmlinux-btf"
+# 自动生成: passwall（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES 23.05-24.10_luci-app-passwall 23.05-24.10_luci-i18n-passwall-zh-cn chinadns-ng dns2socks geoview ipt2socks microsocks naiveproxy shadow-tls shadowsocks-rust-sslocal shadowsocks-rust-ssserver shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-client tcping trojan-plus tuic-client v2ray-geoip v2ray-geosite v2ray-plugin xray-core xray-plugin"
+# 自动生成: passwall2（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng geoview luci-app-passwall2 luci-i18n-passwall2-zh-cn naiveproxy shadowsocks-rust-sslocal shadowsocks-rust-ssserver shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-client tcping tuic-client v2ray-geoip v2ray-geosite v2ray-plugin xray-core"
+# 自动生成: quickfile（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-quickfile luci-i18n-quickfile-zh-cn quickfile"
+# 自动生成: rtp2httpd（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-rtp2httpd luci-i18n-rtp2httpd-zh-cn rtp2httpd"
+# 自动生成: sing-box（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
+# 自动生成: ssrp-mihomo（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES chinadns-ng dns2socks dns2socks-rust dns2tcp hysteria ipt2socks ipt2socks-rs libopenssl3 libudns lua-neturl luci-app-ssr-plus luci-i18n-ssr-plus-zh-cn microsocks mosdns naiveproxy redsocks2 shadow-tls shadowsocks-libev-ss-server shadowsocks-rust-sslocal shadowsocks-rust-ssmanager shadowsocks-rust-ssserver shadowsocks-rust-ssservice shadowsocks-rust-ssurl shadowsocksr-libev-ssr-check shadowsocksr-libev-ssr-local shadowsocksr-libev-ssr-nat shadowsocksr-libev-ssr-redir shadowsocksr-libev-ssr-server simple-obfs-client tcping tcping-simple trojan trojan-plus tuic-client v2ray-plugin xray-core"
+# ============ 自动维护结束 ============
