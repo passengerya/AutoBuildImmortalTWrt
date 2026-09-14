@@ -116,14 +116,25 @@ AutoBuildImmortalTWrt/
 
 > 第三方软件无需手动处理：只要在 `custom-packages.sh`（或 apk 版）里取消了注释，构建时自动从内嵌 store 装进固件。
 
-## ✅ 如何开启第三方软件
+## ✅ 如何开启软件（两种来源）
 
+**来源一：上游同步的第三方软件**（每日自动同步进内嵌 store，自动生成段）
 1. 确认该软件在 [store/run](https://github.com/passengerya/AutoBuildImmortalTWrt/tree/master/store/run) 里有对应目录（x86 看 `x86/`，ARM 看 `arm64/`）；
 2. 编辑 `shell/custom-packages.sh`（24.10）或 `shell/apk-custom-packages.sh`（25.12），**把对应行行首的 `#` 去掉**，例如：
 
 ```bash
-# 端口转发 lucky 大吉
+# 自动生成: lucky | Lucky大吉 | 端口转发/反向代理/内网穿透 | 2.20.2-r13 | 取消下一行注释即启用
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-lucky lucky"   # ← 去掉行首 # 即开启
+```
+
+**来源二：imm 仓库内软件**（ImmortalWrt 官方仓库内的软件，无需同步，固定段）
+- 构建固件的底层来源就是 imm 仓库，这些软件构建时**直接从官方源解析安装**；
+- 清单见 [store/imm-packages.md](store/imm-packages.md)（含中文说明），在开关文件下半部分「以下imm仓库内的软件」固定段中取消注释即可，例如：
+
+```bash
+#===========================以下imm仓库内的软件==============================↓
+# DDNS-Go - 动态域名解析
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-go-zh-cn"   # ← 去掉行首 # 即开启
 ```
 
 3. 触发构建，软件即被打进固件。
