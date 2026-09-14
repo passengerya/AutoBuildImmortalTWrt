@@ -99,6 +99,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-crowdsec-firewall-bouncer-zh-cn"
 # CloudShark - 远程抓包分析
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cshark-zh-cn"
+# Dae - 基于 eBPF 的高性能透明代理
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES dae"
 # 仪表盘 - LuCI 首页仪表盘
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-dashboard-zh-cn"
 # DAWN - WiFi 漫游优化（802.11k/v）
@@ -145,6 +147,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-hd-idle-zh-cn"
 # HTTPS DNS 代理 - DoH 加密解析
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-https-dns-proxy-zh-cn"
+# Hysteria - 高性能 QUIC 代理
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES hysteria"
 # IPsec VPN 服务器（IKEv1 PSK/Xauth）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ipsec-vpnd-zh-cn"
 # irqbalance - 中断负载均衡
@@ -269,6 +273,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-syncthing-zh-cn"
 # 中山大学校园网 - H3C 认证
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-sysuh3c-zh-cn"
+# Tailscale - 异地组网（WireGuard）
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES tailscale"
 # TimeWOL - 定时网络唤醒
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-timewol-zh-cn"
 # TinyProxy - 轻量 HTTP 代理
@@ -315,6 +321,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xfrpc-zh-cn"
 # xinetd - 超级服务管理
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xinetd-zh-cn"
+# Xray-core - 代理内核
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES xray-core"
 # 迅雷快鸟 - 宽带加速
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-xlnetacc-zh-cn"
 # ZeroTier - 虚拟局域网

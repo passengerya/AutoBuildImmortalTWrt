@@ -200,7 +200,8 @@ jobs:
       - name: Enable Store integration
         run: |
           if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
-            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
+            # 插入到自动生成段内(自动维护结束标记之前), 避免落到 imm 固定段之后
+            sed -i '/# ============ 自动维护结束 ============/i CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' shell/custom-packages.sh
             echo "✅ 已追加 luci-app-store"
           else
             echo "❎ 未启用 luci-app-store"

@@ -34,6 +34,7 @@
 | luci-i18n-cpulimit-zh-cn | cpulimit - CPU 使用率限制 |
 | luci-i18n-crowdsec-firewall-bouncer-zh-cn | CrowdSec - 防火墙联动防护 |
 | luci-i18n-cshark-zh-cn | CloudShark - 远程抓包分析 |
+| dae | Dae - 基于 eBPF 的高性能透明代理 |
 | luci-i18n-dashboard-zh-cn | 仪表盘 - LuCI 首页仪表盘 |
 | luci-i18n-dawn-zh-cn | DAWN - WiFi 漫游优化（802.11k/v） |
 | luci-i18n-dcwapd-zh-cn | dcwapd - 双频无线 AP 守护 |
@@ -57,6 +58,7 @@
 | luci-i18n-haproxy-tcp-zh-cn | HAProxy - TCP 负载均衡 |
 | luci-i18n-hd-idle-zh-cn | 硬盘休眠 - 空闲自动停转 |
 | luci-i18n-https-dns-proxy-zh-cn | HTTPS DNS 代理 - DoH 加密解析 |
+| hysteria | Hysteria - 高性能 QUIC 代理 |
 | luci-i18n-ipsec-vpnd-zh-cn | IPsec VPN 服务器（IKEv1 PSK/Xauth） |
 | luci-i18n-irqbalance-zh-cn | irqbalance - 中断负载均衡 |
 | luci-i18n-keepalived-zh-cn | Keepalived - 高可用（VRRP） |
@@ -119,6 +121,7 @@
 | luci-i18n-statistics-zh-cn | 系统统计 - 图表监控 |
 | luci-i18n-syncthing-zh-cn | Syncthing - 文件同步 |
 | luci-i18n-sysuh3c-zh-cn | 中山大学校园网 - H3C 认证 |
+| tailscale | Tailscale - 异地组网（WireGuard） |
 | luci-i18n-timewol-zh-cn | TimeWOL - 定时网络唤醒 |
 | luci-i18n-tinyproxy-zh-cn | TinyProxy - 轻量 HTTP 代理 |
 | luci-i18n-tor-zh-cn | Tor - 匿名网络 |
@@ -142,5 +145,6 @@
 | luci-i18n-wol-zh-cn | Wake-on-LAN - 网络唤醒 |
 | luci-i18n-xfrpc-zh-cn | xfrpc - 内网穿透 |
 | luci-i18n-xinetd-zh-cn | xinetd - 超级服务管理 |
+| xray-core | Xray-core - 代理内核 |
 | luci-i18n-xlnetacc-zh-cn | 迅雷快鸟 - 宽带加速 |
 | luci-i18n-zerotier-zh-cn | ZeroTier - 虚拟局域网 |

@@ -51,6 +51,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -100,8 +101,15 @@ APP_META = {
     "rtp2httpd": {"cn": "IPTV转发", "desc": "IPTV 流媒体转发服务器", "src": "stackia/rtp2httpd"},
     "sing-box": {"cn": "Sing-box内核", "desc": "通用代理内核", "src": "SagerNet/sing-box"},
     "ssrp-mihomo": {"cn": "SSRP代理", "desc": "SSR-Plus 代理工具(mihomo 内核)", "src": "fw876/helloworld"},
-    "xray-core": {"cn": "Xray内核", "desc": "Xray 代理内核", "src": "XTLS/Xray-core"},
 }
+
+# 冲突组: 同一组内同时开启会在固件里互相冲突(参考各应用上游说明)。
+# 阶段三检测到同组内 >=2 个应用同时启用时, 在生成段顶部输出 ⚠️ 警告行。
+CONFLICT_GROUPS = [
+    {"clashoo", "nikki"},
+    {"luci-app-advancedplus", "argon"},
+    {"quickfile", "luci-app-run"},
+]
 
 # arm64 变体优先级(仅当本仓库中该应用没有既有文件时生效):
 # generic 兼容性最好, 其次是 cortex-a53 优化构建、a53, 最后是纯 aarch64
@@ -124,17 +132,31 @@ RE_ARCH_ARM32 = re.compile(r"aarch32|arm32")
 RE_ARCH_X8632 = re.compile(r"i386|x86_32")
 
 
-def api_get(url):
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "sync-run-files",
-    }
-    if TOKEN:
-        headers["Authorization"] = "Bearer %s" % TOKEN
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+def api_get(url, retries=2, delay=10):
+    """带重试的 API 请求: 限流(403/429)、5xx、网络抖动不中断整个同步; 404 直接抛出。"""
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            headers = {
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "sync-run-files",
+            }
+            if TOKEN:
+                headers["Authorization"] = "Bearer %s" % TOKEN
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                raise
+            last_exc = e
+        except Exception as e:
+            last_exc = e
+        if attempt < retries:
+            print("[重试] api_get 失败(%s), %ds 后重试 %d/%d: %s" % (last_exc, delay, attempt + 1, retries, url))
+            time.sleep(delay)
+    raise last_exc
 
 
 def app_dir_of(name):
@@ -239,7 +261,7 @@ def choose(cands, key, arch, existing_variants):
     return sorted(cands, key=sel, reverse=True)[0]
 
 
-def download_asset(asset, dest_dir):
+def download_asset(asset, dest_dir, retries=2, delay=10):
     os.makedirs(dest_dir, exist_ok=True)
     out = os.path.join(dest_dir, asset["name"])
     if os.path.isfile(out) and os.path.getsize(out) == asset.get("size", 0):
@@ -251,12 +273,23 @@ def download_asset(asset, dest_dir):
         headers["Authorization"] = "Bearer %s" % TOKEN
     req = urllib.request.Request(asset["browser_download_url"], headers=headers)
     tmp = out + ".tmp"
-    with urllib.request.urlopen(req, timeout=300) as resp, open(tmp, "wb") as f:
-        shutil.copyfileobj(resp, f)
-    if os.path.getsize(tmp) == 0:
+    last_exc = None
+    for attempt in range(retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=300) as resp, open(tmp, "wb") as f:
+                shutil.copyfileobj(resp, f)
+            if os.path.getsize(tmp) == 0:
+                raise RuntimeError("下载失败(空文件): %s" % asset["name"])
+            os.replace(tmp, out)
+            return
+        except Exception as e:
+            last_exc = e
+            if attempt < retries:
+                print("[重试] 下载失败(%s), %ds 后重试 %d/%d: %s" % (e, delay, attempt + 1, retries, asset["name"]))
+                time.sleep(delay)
+    if os.path.isfile(tmp):
         os.remove(tmp)
-        raise RuntimeError("下载失败(空文件): %s" % asset["name"])
-    os.replace(tmp, out)
+    raise last_exc
 
 
 def leading_prefix(name):
@@ -528,6 +561,11 @@ def maintain_lists(summary, valid_names, dry_run=False):
         enabled = read_enabled_apps(sh_path)
         pkg_name_fn = ipk_package_name if channel == "ipk" else apk_package_name
         sec = []
+        # 冲突组检查: 同组内同时启用 >=2 个应用时, 在生成段顶部输出警告(仅提示, 不阻断)
+        for group in CONFLICT_GROUPS:
+            hit = sorted(group & enabled)
+            if len(hit) >= 2:
+                sec.append("# ⚠️ 冲突警告: %s 同时开启, 可能互相冲突, 请只保留其中一个" % " 与 ".join(hit))
         for app, ch, ver, archs, pkgs in rows:
             if ch != channel:
                 continue
