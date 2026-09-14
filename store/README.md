@@ -15,6 +15,14 @@ store/
 └── sync_run_files.py            # 同步脚本（由 sync-store 工作流调用）
 ```
 
+## 软件来源（两部分）
+
+1. **上游同步的第三方软件**：`run/x86/`、`run/arm64/` 中的 .run 与 ipk 目录，
+   由 Sync Store 工作流每日从 CloudRunFilesBuilder 同步（见下方同步机制与自动维护的软件列表）；
+2. **imm 仓库内软件（固定列表）**：ImmortalWrt 官方仓库内的软件（固件编译的底层来源），
+   **无需同步**，构建时直接从官方源安装；清单见 [imm-packages.md](imm-packages.md)，
+   在 `shell/custom-packages.sh` / `shell/apk-custom-packages.sh` 的固定段中取消注释启用。
+
 ## 同步机制
 
 同步分两个阶段（`sync_run_files.py`）：
