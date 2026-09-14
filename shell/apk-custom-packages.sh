@@ -24,7 +24,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 
 # ───────────────────── 网络服务 ─────────────────────
 # 自动生成: easytier | 异地组网 | EasyTier 点对点组网工具 | v2.6.4 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier luci-app-easytier"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
 # 自动生成: luci-app-tailscale-community | Tailscale组网 | Tailscale 组网(Community 版) | 4.2.3-r1 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn"
 # 自动生成: rtp2httpd | IPTV转发 | IPTV 流媒体转发服务器 | 3.17.1-r1 | 取消下一行注释即启用

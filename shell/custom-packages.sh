@@ -34,7 +34,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
 # 自动生成: bandix | 流量监控 | Bandix 实时流量监控与统计 | 0.11.0-r25 | 取消下一行注释即启用
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES bandix luci-app-bandix"
 # 自动生成: easytier | 异地组网 | EasyTier 点对点组网工具 | v2.6.4 | 取消下一行注释即启用
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier luci-app-easytier"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
 # 自动生成: luci-app-tailscale-community | Tailscale组网 | Tailscale 组网(Community 版) | 4.2.3-r1 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn"
 # 自动生成: lucky | Lucky大吉 | 端口转发/反向代理/内网穿透 | 2.20.2-r13 | 取消下一行注释即启用
@@ -67,7 +67,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-aurora-config luci-i18n-aurora-config
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-uninstall"
 # 自动生成: luci-theme-aurora | 极光主题 | 极光主题界面 | 1.3.0-r20260830 | 取消下一行注释即启用
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
-# 自动生成: luci-theme-shadcn | Shadcn主题 | 现代 Shadcn 风格界面主题 | 0.5.0-r20260830 | 取消下一行注释即启用
+# 自动生成: luci-theme-shadcn | Shadcn主题 | 现代 Shadcn 风格界面主题 | 0.5.0-r20260830 上游停更(保留旧版) | 取消下一行注释即启用
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-shadcn"
 
 # ───────────────────── 设备管理 ─────────────────────
