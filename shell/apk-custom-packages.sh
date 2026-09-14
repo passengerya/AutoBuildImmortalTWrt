@@ -296,7 +296,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-commands-zh-cn"
 # cpulimit - CPU 使用率限制
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cpulimit-zh-cn"
-# CloudShark - 远程抓包分析
+# CloudShark - 远程抓包分析 (⚠️ 依赖 mbedtls 版 libustream, 与本固件 openssl 后端冲突, 请勿开启)
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-cshark-zh-cn"
 # 仪表盘 - LuCI 首页仪表盘
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-dashboard-zh-cn"

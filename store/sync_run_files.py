@@ -407,9 +407,13 @@ def version_str_of(name):
 
 
 def ipk_package_name(name):
-    """从 ipk 文件名提取包名(去掉末尾架构段与版本段)。"""
+    """从 ipk 文件名提取包名(去掉末尾架构段与版本段)。
+
+    架构段可以是 _x86_64/_all, 也可能是上游的非规范写法 -all
+    (如 luci-app-adguardhome-all.ipk, 其真实包名是 luci-app-adguardhome)。
+    """
     s = name[:-4] if name.endswith(".ipk") else name
-    s = re.sub(r"_(?:all|x86_64|aarch64(?:_[a-z0-9.-]+)?|arm_[a-z0-9._-]+|mips(?:el)?_[\w.-]+|i386(?:_[\w.-]+)?)$", "", s)
+    s = re.sub(r"[_-](?:all|x86_64|aarch64(?:_[a-z0-9.-]+)?|arm_[a-z0-9._-]+|mips(?:el)?_[\w.-]+|i386(?:_[\w.-]+)?)$", "", s)
     parts = s.split("_")
     for i in range(len(parts) - 1, 0, -1):
         if re.match(r"^(?:v?\d|r\d|git-)", parts[i]):

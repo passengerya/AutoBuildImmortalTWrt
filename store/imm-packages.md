@@ -33,7 +33,7 @@
 | luci-i18n-coovachilli-zh-cn | CoovaChilli - 强制门户（WiFi 热点认证） |
 | luci-i18n-cpulimit-zh-cn | cpulimit - CPU 使用率限制 |
 | luci-i18n-crowdsec-firewall-bouncer-zh-cn | CrowdSec - 防火墙联动防护 |
-| luci-i18n-cshark-zh-cn | CloudShark - 远程抓包分析 |
+| luci-i18n-cshark-zh-cn | CloudShark - 远程抓包分析（⚠️ 依赖 mbedtls 版 libustream，与固件 openssl 后端冲突，请勿开启） |
 | dae | Dae - 基于 eBPF 的高性能透明代理 |
 | luci-i18n-dashboard-zh-cn | 仪表盘 - LuCI 首页仪表盘 |
 | luci-i18n-dawn-zh-cn | DAWN - WiFi 漫游优化（802.11k/v） |
