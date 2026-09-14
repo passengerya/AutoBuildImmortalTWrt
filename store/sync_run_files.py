@@ -65,6 +65,7 @@ RE_ARCH = re.compile(r"_?(?:x86_64|x86-64|aarch64(?:_cortex-a53|_a53|_generic)?|
 # 版本号: 可带 v 前缀的主版本 + 可选的 -r修订号(修订号后面必须是分隔符或结尾, 避免误吞 git hash)
 RE_VERSION = re.compile(r"v?(\d+(?:\.\d+)+)(?:-r?(\d+)(?=[-_.]|$))?")
 RE_REV = re.compile(r"r\d+")                 # 独立的 r9 之类修订标记
+RE_RC = re.compile(r"-rc\d+")                # 预发布 rc 标记(如 nekobox 的 -rc14)
 RE_HASH = re.compile(r"(?<![0-9a-z])[0-9a-f]{7,}(?![0-9a-z])")  # git 短 hash
 RE_NUM = re.compile(r"(?<![0-9a-z])\d+(?![0-9a-z])")            # 独立数字(如 ssrp 的 196)
 RE_ARCH_X86 = re.compile(r"x86_64|x86-64")
@@ -93,6 +94,7 @@ def app_dir_of(name):
     s = RE_ARCH.sub("", s)
     s = RE_VERSION.sub("", s)
     s = RE_REV.sub("", s)
+    s = RE_RC.sub("", s)
     s = RE_HASH.sub("", s)
     s = RE_NUM.sub("", s)
     return re.sub(r"[^0-9a-z-]+", "-", s.lower()).strip("-")
@@ -117,6 +119,7 @@ def norm_key(name):
     s = RE_ARCH.sub("", s)
     s = RE_VERSION.sub("", s)
     s = RE_REV.sub("", s)
+    s = RE_RC.sub("", s)
     s = RE_HASH.sub("", s)
     s = RE_NUM.sub("", s)
     return re.sub(r"[^0-9a-z]+", "_", s.lower()).strip("_")
