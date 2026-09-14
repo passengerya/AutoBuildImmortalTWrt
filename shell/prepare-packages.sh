@@ -8,9 +8,12 @@ TARGET_DIR="packages"
 rm -rf "$TEMP_DIR" "$TARGET_DIR"
 mkdir -p "$TEMP_DIR" "$TARGET_DIR"
 
-# 解压 .run 文件
+# 解压 .run 文件（仅 ipk 通道：跳过 25_/25- 前缀的 apk 通道包）
 for run_file in "$BASE_DIR"/*.run; do
     [ -e "$run_file" ] || continue
+    case "$run_file" in
+        */25_*|*/25-*) echo "⏭️ 跳过 apk 通道包 $run_file"; continue ;;
+    esac
     echo "🧩 解压 $run_file -> $TEMP_DIR"
     sh "$run_file" --target "$TEMP_DIR" --noexec
 done

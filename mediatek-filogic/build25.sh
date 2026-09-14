@@ -8,9 +8,14 @@ else
   # 同步第三方软件仓库run/apk
   echo "🔄 正在同步第三方软件仓库 Cloning apk file repo..."
 
-  # 拷贝 store/run/arm64 下所有 run 文件和apk文件 到 extra-packages 目录
+  # 拷贝 store/run/arm64：仅 apk 通道 .run（25_/25- 前缀）与应用子目录 → extra-packages/
   mkdir -p /home/build/immortalwrt/extra-packages
-  cp -r /home/build/immortalwrt/store/run/arm64/* /home/build/immortalwrt/extra-packages/
+  # 仅拷贝本通道（apk）的 .run 文件：25_/25- 前缀
+  find /home/build/immortalwrt/store/run/arm64/ -maxdepth 1 \( -name '25_*.run' -o -name '25-*.run' \) \
+    -exec cp {} /home/build/immortalwrt/extra-packages/ \;
+  # 拷贝应用子目录（sync-store 同步时从 .run 解出的 apk 文件）
+  find /home/build/immortalwrt/store/run/arm64/ -mindepth 1 -maxdepth 1 -type d \
+    -exec cp -r {} /home/build/immortalwrt/extra-packages/ \;
 
   echo "✅ Run files copied to extra-packages:"
   # 解压并拷贝apk到packages目录

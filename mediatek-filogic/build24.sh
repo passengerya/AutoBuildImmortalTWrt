@@ -7,9 +7,14 @@ source shell/switch_repository.sh
 # 下载 run 文件仓库
 echo "🔄 使用本仓库内嵌 store 目录（sync-store 工作流每日同步）"
 
-# 拷贝 store/run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
+# 拷贝 store/run/arm64：仅 ipk 通道 .run（排除 25_/25- 前缀）与应用子目录 → extra-packages/
 mkdir -p /home/build/immortalwrt/extra-packages
-cp -r /home/build/immortalwrt/store/run/arm64/* /home/build/immortalwrt/extra-packages/
+# 仅拷贝本通道（ipk）的 .run 文件：排除 25_/25- 前缀（apk 通道）
+find /home/build/immortalwrt/store/run/arm64/ -maxdepth 1 -name '*.run' ! -name '25_*' ! -name '25-*' \
+  -exec cp {} /home/build/immortalwrt/extra-packages/ \;
+# 拷贝应用子目录（sync-store 同步时从 .run 解出的 ipk 文件）
+find /home/build/immortalwrt/store/run/arm64/ -mindepth 1 -maxdepth 1 -type d \
+  -exec cp -r {} /home/build/immortalwrt/extra-packages/ \;
 
 echo "✅ Run files copied to extra-packages:"
 ls -lh /home/build/immortalwrt/extra-packages/*.run

@@ -1,32 +1,21 @@
-# 支持的第三方软件列表如下 
- > 第三方软件就是ImmortalWrt仓库以外的软件包
+# 软件支持列表
 
+> 本文件仅作索引。实际软件清单由 Sync Store 工作流自动维护，请以清单文件为准。
 
-| 第三方软件名称                  | 简介 / 功能描述                        | 来源 / 项目地址                                                                           |
-| --------------------- | -------------------------------- | ----------------------------------------------------------------------------------- |
-| luci-app-store        | iStore应用商店(0.1.30-1)             | [linkease/luci-app-store](https://github.com/linkease/istore)                 |
-| luci-app-amlogic             | 晶晨宝盒(仅限ARM-64平台) | [ophub/luci-app-amlogic](https://github.com/ophub/luci-app-amlogic)                       |
-| luci-app-adguardhome  | 本地 DNS 去广告解决方案                   | [AdGuardTeam/AdGuardHome](https://github.com/AdguardTeam/AdGuardHome)               |
-| luci-app-advancedplus | 高级设置                   | [sirpdboy/luci-app-advancedplus](https://github.com/sirpdboy/luci-app-advancedplus)                                                                 |
-| luci-app-netspeedtest | 网络测速插件-支持 Speedtest 测试           | [sirpdboy/luci-app-netspeedtest](https://github.com/sirpdboy/luci-app-netspeedtest)  |
-| luci-app-netwizard    | 网络配置向导插件                          | [sirpdboy/luci-app-netwizard](https://github.com/sirpdboy/luci-app-netwizard)                                                                 |
-| luci-app-partexp      | 分区扩容插件         | [sirpdboy/luci-app-partexp](https://github.com/sirpdboy/luci-app-partexp)                             |
-| luci-app-quickstart   | iStore首页和网络向导                  | [linkease/luci-app-quickstart](https://github.com/kiddin9/kwrt-packages/tree/main/luci-app-quickstart)                                                                 |
-| luci-app-turboacc     | TurboACC 网络加速器（集成BBR、shortcut）   | [chenmozhijin/turboacc](https://github.com/passengerya/store/tree/master/run/x86/luci-app-turboacc) |
-| luci-theme-kucat      | 酷猫主题                  | [sirpdboy/luci-theme-kucat](https://github.com/sirpdboy/luci-theme-kucat)                 |
-| luci-app-mosdns                | 高性能 DNS 分流器，支持 DoH/DoQ 等         | [sbwml/luci-app-mosdns](https://github.com/sbwml/luci-app-mosdns)                     |
-| luci-app-nekobox               | 代理工具      | [Thaolga/luci-app-nekobox](https://github.com/Thaolga/openwrt-nekobox)       |
-| luci-app-nikki                 | 代理工具               | [nikkinikki-org/nikki](https://github.com/nikkinikki-org/OpenWrt-momo)                                                                     |
-| luci-app-momo                 | 代理工具               | [nikkinikki-org/momo](https://github.com/nikkinikki-org/OpenWrt-momo)                                                                     |
-| luci-app-passwall2             | 代理工具           | [Openwrt-Passwall/openwrt-passwall2](https://github.com/Openwrt-Passwall/openwrt-passwall2)       |
-| luci-app-ssr-plus              | 代理工具                | [coolsnowwolf/luci-app-ssr-plus](https://github.com/fw876/helloworld) |
-| tailscale             | ZeroTier 类似的 VPN 工具，基于 WireGuard | [tailscale/tailscale](https://github.com/tailscale/tailscale)                       |
-| luci-app-lucky           | Lucky大吉,软硬路由公网神器,ipv6/ipv4 端口转发,反向代理 | [程序 gdy666/lucky](https://github.com/gdy666/lucky) [ipk仓库](https://dl.openwrt.ai/packages-24.10/aarch64_cortex-a53/kiddin9/)                      |
-| luci-app-gecoosac           | 集客AC                | [lwb1978/openwrt-gecoosac](https://github.com/lwb1978/openwrt-gecoosac) |
-| luci-app-taskplan             | 任务计划 |                        |
-| luci-app-easytier             | 组网 | https://github.com/EasyTier/luci-app-easytier                       |
-| luci-app-unishare             | 统一文件共享 | webdav共享                      |
-| luci-app-uninstall             | 高级卸载1.1.8 | [用于彻底卸载插件 点这里出处](https://www.bilibili.com/video/BV1dK1xBVEHF)                     |
-| luci-theme-aurora      | 极光主题 0.9                 | [eamonxg/luci-theme-aurora](https://github.com/eamonxg/luci-theme-aurora)                 |
-| luci-app-bandix      | Bandix流量监控 0.11                 | [timsaya/luci-app-bandix](https://github.com/timsaya/luci-app-bandix)                 |
-| luci-app-rtp2httpd      |  IPTV 流媒体转发服务器                 | [stackia/rtp2httpd](https://github.com/stackia/rtp2httpd)                 |                    |
+本项目可集成的软件来自两个来源：
+
+## 来源一：上游同步的第三方软件（每日自动同步）
+
+由 [CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder) 每日打包，Sync Store 工作流自动同步进本仓库内嵌 `store/`。
+
+- **软件清单**：[store/README.md](store/README.md) 软件表（软件 | 中文名 | 通道 | 版本 | 架构 | 用途 | 来源），与内嵌 store 实际内容一致
+- **软件开关**：`shell/custom-packages.sh`（24.10 ipk 通道）、`shell/apk-custom-packages.sh`（25.12 apk 通道）自动生成段
+- **开启方式**：取消对应行的注释后触发构建；连续 3 次不在上游 Release 的软件会标记「⚠️上游停更」但保留
+
+## 来源二：ImmortalWrt 官方仓库内软件（固定清单，无需同步）
+
+固件底层来源就是 ImmortalWrt 官方仓库，这些软件构建时直接从官方源解析安装。
+
+- **软件清单**：[store/imm-packages.md](store/imm-packages.md)（软件包 | 中文说明）
+- **软件开关**：上述两个开关文件的「以下imm仓库内的软件」固定段（同步不触碰）
+- **开启方式**：取消对应行的注释后触发构建
