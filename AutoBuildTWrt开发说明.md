@@ -1,0 +1,309 @@
+# AutoBuildTWrt 开发说明文档（当前实现）
+
+| 项目 | 内容 |
+| --- | --- |
+| 文档版本 | v2.0（按当前实现重构） |
+| 更新日期 | 2026-09-14 |
+| 用途 | 描述新项目**当前的真实实现流程**，供开发审阅与排查问题 |
+| 本地工作区 | `E:\Code\Mine\` 下仅保留 [CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/README.md)（第一层）与本项目；本文档位于本项目根目录 `AutoBuildTWrt开发说明.md`；参考仓库 store / AutoBuildImmortalWrt 本地副本已删除，内容以 GitHub 为准 |
+
+---
+
+## 1. 系统总览
+
+### 1.1 三仓库流水线
+
+```
+① CloudRunFilesBuilder（第一层, 独立仓库, 主分支 daily）
+   51 个工作流每天北京时间 6:00 起错峰运行:
+   拉取上游 ipk → makeself 打包 .run → 上传当日 Release(tag=YYYY-MM-DD)
+        │
+        ▼
+② 内嵌 store/（本仓库内, 由 Sync Store 工作流维护, 主分支 master）
+   第一层全部完成后即时同步(repository_dispatch), 每天北京时间 7:00 定时兜底,
+   分三阶段(见 §3):
+   阶段一 .run 同步 → 阶段二 ipk 解压 → 阶段三 软件列表维护 → 自动提交
+        │
+        ▼
+③ 固件构建（本仓库 16 个工作流, 手动触发）
+   docker imagebuilder 容器挂载 store/ shell/ 等 → build24/25.sh → make image
+        │
+        ▼
+   最终产物: OpenWrt/ImmortalWrt 固件包 → 上传各机型 Release
+```
+
+### 1.2 两条软件通道（严格分离, 互不挤占）
+
+| | 24.10 通道（ipk/opkg） | 25.12 通道（apk） |
+| --- | --- | --- |
+| 构建脚本 | 各机型 `build24.sh` | 各机型 `build25.sh` |
+| 软件开关文件 | `shell/custom-packages.sh` | `shell/apk-custom-packages.sh` |
+| .run 文件名前缀 | 无前缀 / `24_` / `24-` | `25_` / `25-` |
+| .run 内安装命令 | `opkg install *.ipk` | `apk add --allow-untrusted *.apk` |
+| 软件包目录 | store/run/<arch>/<应用>/（.ipk） | 不生成软件包目录（apk 在构建时由 apk-prepare-packages.sh 从 25.x .run 解出） |
+
+### 1.3 当前状态（2026-09-14）
+
+- 第一层：51 个工作流（29 个 24.10 + 19 个 25.12 + 3 个维护）
+- 内嵌 store：每架构 27 个应用目录、45 个 .run（共 90）、287 个 ipk（24/25 两通道并存，25 通道已内嵌）
+- 软件列表汇总：store/README.md 表格 37 个（应用×通道）条目
+- 分支：第一层 daily（生产）/ dev；本仓库 master（生产）/ dev
+
+---
+
+## 2. 第一层 CloudRunFilesBuilder
+
+### 2.1 工作流清单（51 个）
+
+**24.10 ipk 通道（29 个）**：adguardhome、argon、aurora-theme、aurora-config、shadcn、advancedplus、amlogic（仅 ARM64）、bandix、clashoo、dufs、easytier、homeproxy、lucky、momo、mosdns、nekobox、nikki、openclash(oc)、openlist2、openwrt-daede、passwall(main)、passwall2(pw2)、quickfile(24-quickfile)、rtp2httpd、sing-box(singbox)、ssr-plus(ssrp)、tailscale-community、iStore(store)、高级卸载(advance_uninstall)
+
+**25.12 apk 通道（19 个）**：argon25、build-pw、mosdns25、oc25、pw2-25、ssrp25、store25、25-quickfile、25-singbox、25-openwrt-daede、25-clashoo、25-rtp2httpd、25-advancedplus、25-aurora-theme、25-amlogic、25-tailscale-community、25-easytier、25-shadcn、25-aurora-config
+
+**维护（3 个）**：clean（旧运行记录）、clean-release（旧 Release）、remove（全部 tag）
+
+> xray-core 已从第一层移除（imm 官方仓库自带，第三层已在开关文件 imm 固定段提供，24/25 两通道）。
+
+### 2.2 单个工作流标准流程（5 段式）
+
+```
+checkout → 装 makeself → 下载 ipk 分平台目录 → apk 文件名规范化(25 通道, normalize_apk_names.py)
+→ 拷 install.sh → 提版本号 → makeself 打包 → 上传当日 Release → 通知下游 Sync Store(领导选举)
+```
+
+上游资产分三种来源，对应三种模板（新软件照抄其一）：
+1. **Release 直接发 ipk**（最常用）：jq 按架构正则解析资产 URL（参考 rtp2httpd.yml）
+2. **Release 发 zip**：下载 zip → unzip 出 ipk（参考 easytier.yml）
+3. **目录列表型源**（dl.openwrt.ai 等）：curl 目录页 grep ipk 链接（参考 lucky.sh / bandix.sh）
+
+### 2.3 产物命名规范（★ 整条链路的基石）
+
+```
+[通道前缀]<应用名>_<版本>_<架构>.run
+```
+
+| 元素 | 规范 | 实例 |
+| --- | --- | --- |
+| 通道前缀 | 24.10 无前缀或 `24_`；25.12 `25_`/`25-` | `mosdns_v5.3.4-r14_x86_64.run`、`25-argon-2.4.7_aarch64_generic.run` |
+| 应用名 | 全小写连字符 | `sing-box`、`luci-app-store` |
+| 版本号 | `v1.2.3` 或 `1.2.3`，可带 `-rN` | `v5.3.4-r14`、`0.46.0-r1` |
+| 架构 | `x86_64` / `aarch64_generic` / `aarch64_cortex-a53` / `aarch64_a53` / `_all` | `_all` = 架构无关，双目录都放 |
+
+下游同步脚本完全依赖这些文件名做正则解析，**改名规则需三层同步评估**。
+
+### 2.4 Release 与调度
+
+- 所有工作流上传到**同一个当日 tag**（`YYYY-MM-DD` 北京时间），softprops/action-gh-release 自动合并资产；
+- cron 全部在 UTC 22:00（北京 6:00）起，**分钟数错开**（0~20），避免并发抢 tag；
+- **完成即通知（领导选举）**：每个上传工作流末尾有「Notify Sync Store」步骤——sleep 15s 让同期构建入队后，由「最新启动且仍在运行/排队」的运行向第三层发 repository_dispatch（event_type: builder-done）即时触发同步，确定性单通知（跨仓库 PAT 存于 secrets.SYNC_DISPATCH_TOKEN，未配置时跳过、依赖定时兜底）；
+- 注意事项（历史教训）：
+  - 所有 GitHub API curl 必须带 `Authorization: token ${{ secrets.GITHUB_TOKEN }}`，否则会撞共享 IP 限流（60 次/小时）；
+  - 版本号提取 sed 必须覆盖 `_all.ipk` 后缀（曾有 4 个应用版本号提取为空，产出 `bandix__x86_64.run` 等坏名）；
+  - 新 workflow 必须**合并到 daily** 后才能通过 API dispatch（dispatch 按文件名只在默认分支查找）。
+
+### 2.5 分支
+
+- **daily**：生产（默认）。定时构建只读该分支；
+- **dev**：开发，验证通过后合并 daily。
+
+---
+
+## 3. 第二层 内嵌 store（本仓库 `store/` 目录）
+
+### 3.1 目录结构
+
+```
+store/
+├── sync_run_files.py      # 同步脚本（三阶段, 唯一入口）
+├── .sync-state.json       # 同步状态（管理目录名单 + 下线计数）
+├── README.md              # 含软件列表汇总表格（自动维护）
+└── run/
+    ├── x86/               # .run 根目录 + 应用同名 .ipk 子目录
+    └── arm64/             # 同上
+```
+
+### 3.2 触发与提交（.github/workflows/sync-store.yml）
+
+- 触发：①即时——第一层全部构建完成后发 repository_dispatch（types: `builder-done`）；②定时兜底 `0 23 * * *` UTC（北京 7:00，晚于第一层 6:00 的构建）；③手动 workflow_dispatch（可指定 `builder_repo`）；
+- 提交：`git add store/ shell/` → `sync: 从 <仓库> 同步 run 文件到内嵌 store (日期)`；
+- 只读默认分支（master）的 workflow 文件，改动需合并 master 才生效。
+
+### 3.3 阶段一：.run 同步
+
+| 步骤 | 规则 |
+| --- | --- |
+| 拉取 | 取 BUILDER_REPO（默认 passengerya/CloudRunFilesBuilder）最新 Release 的全部 .run 资产 |
+| 分组 | 按 `(通道, 应用, 架构)` 分组——通道由前缀判定（`25_`/`25-`→apk，其余→ipk），**24/25 两版各自独立保留、互不挤占**；架构由文件名正则判定 |
+| 架构归类 | `x86_64`→`run/x86/`；`aarch64*`→`run/arm64/`；`aarch32`/`i386`→跳过；`_all`→两目录都放 |
+| 变体选择 | 同组多候选时：版本高者优先 → 延续已有变体 → 无前缀命名优先 → 日期前缀新者优先 → 新应用按 `generic > cortex-a53 > a53 > 纯aarch64` |
+| 旧版本清理 | 只删**同前缀、同应用**的旧 .run（`24_` 只删 `24_`），**不触碰 .ipk 和子目录** |
+| 下载优化 | 文件已存在且大小一致则跳过 |
+
+### 3.4 阶段二：ipk 解压
+
+- 每个 .run 执行 `sh xxx.run --target tmp --noexec` 解压；
+- 解出的 .ipk 放入应用同名子目录（`dufs-0.46.0-r1_x86_64.run` → `store/run/x86/dufs/*.ipk`），目录**每次重建**；
+- 应用目录名由文件名推导（清洗前缀/架构/版本/`-rN`/`-rcNN`/hash/孤立数字）；
+- 25.12 的 .run 内含 .apk → 不生成目录，但收集 apk 文件名供阶段三使用；
+- 手动放入的 ipk 目录（与 .run 推导名不冲突）永不删除。
+
+### 3.5 阶段三：软件列表自动维护
+
+每次同步后自动维护三个文件（均在 `START/END` 标记段落内，手工内容不受影响）：
+
+1. **store/README.md 软件列表表格**——按（应用×通道）汇总增删行，列：软件 / 中文名 / 通道 / 版本 / 架构 / 用途 / 来源；
+2. **shell/custom-packages.sh**（ipk 通道，24.10 编译 package 列表）——每应用两行，注释含中文名/用途/版本：
+   ```bash
+   # 自动生成: bandix | 流量监控 | Bandix 实时流量监控与统计 | 0.11.0-r25 | 取消下一行注释即启用
+   #CUSTOM_PACKAGES="$CUSTOM_PACKAGES bandix luci-app-bandix luci-i18n-bandix-zh-cn"
+   ```
+3. **shell/apk-custom-packages.sh**（apk 通道，25.12 编译 package 列表）——同上，行内为 apk 包名。
+   元数据（中文名/用途/来源）维护在同步脚本的 `APP_META` 表中，新增应用时补一行即可。
+
+关键机制：
+
+| 机制 | 实现 |
+| --- | --- |
+| 包名提取 | 行内是**真实包名**（opkg/apk install 用包名）：ipk 文件名从右扫版本段（兼容 `23.05-24.10_luci-app-passwall` 这类带前缀包名）；apk 文件名从左扫（版本是连字符多段式，如 `mosdns-5.3.4-r14`） |
+| 启用状态保留 | 用户在生成段取消注释的应用，按应用名识别，后续同步**保持启用** |
+| 停更标记 | .run **连续 3 次同步**不在上游 Release → 标记为「停更」：.run 与软件包目录**全部保留**，README 表格版本列附加 `⚠️上游停更`、生成段注释附加「上游停更(保留旧版)」；应用重新出现在 Release 时自动解除标记；计数与停更名单存 `store/.sync-state.json` |
+| 手动 ipk 安全 | 手动目录不进管理名单，永不被删 |
+| 幂等 | 无新资产时也重跑三阶段，保持列表与实际内容一致 |
+
+---
+
+## 4. 第三层 固件构建
+
+### 4.1 构建工作流（16 个, 全部手动触发）
+
+| 工作流 | 机型/产物 | 镜像 |
+| --- | --- | --- |
+| build-x86-64-24.10.x.yml / 25.12.x.yml | x86-64 EFI 固件 | `x86-64-openwrt-<luci>` |
+| build-iso.yml / build-iso-25.12.x.yml | x86-64 ISO 安装器 | `x86-64-openwrt-<luci>` |
+| build-rockchip-immortalWrt-24.10.x.yml / 25.12.x.yml | rockchip | `rockchip-armv8-openwrt-<luci>` |
+| build-sunxi-cortexa53-24.10.x.yml / 25.12.x.yml | 全志 sunxi | `sunxi-cortexa53-openwrt-<luci>` |
+| build-N1.yml / build-boxs-by-ophub.yml / build-dev-board-by-flippy.yml / build-QEMU-arm64-24.10.x.yml | 盒类/ARM64 | `armsr-armv8-openwrt-<luci>` |
+| build-RaspBerryPi-24.10.x.yml | 树莓派 | 专用 `$tag` 镜像 |
+| build-wireless-router.yml / 25.12.yml | 无线硬路由（MTK/高通/博通） | 专用 `$tag` 镜像 |
+| clean-workflow.yml | 维护 | — |
+
+**统一输入参数**：luci 版本、管理 IP（多网口）、软件包空间（1G~4G）、enable_store、include_docker、enable_pppoe+账号密码。
+
+**统一规范**（全部工作流已应用）：
+- 输入引用用 `${{ github.event.inputs.xxx }}`；
+- 容器命令 `set -o pipefail; … 2>&1 | tee /tmp/imm_build.log`，`make image … V=s`；
+- 上传加 `fail_on_unmatched_files: true` 防止产物路径错误时静默成功；
+- **store 目录挂载**：`-v ${{ github.workspace }}/store:/home/build/immortalwrt/store`。
+
+### 4.2 构建脚本七环节（以 x86-64/build24.sh 为例）
+
+```
+1. source shell/custom-packages.sh        # 读取软件开关(手写段+自动生成段)
+2. 写 files/etc/config/pppoe-settings     # UI 输入传入
+3. 按通道过滤拷贝内嵌 store(禁止克隆): 24.10 构建只拷非 25_/25- 前缀的 .run, 25.12 构建只拷 25_/25- 前缀的 .run, 外加应用 ipk/apk 子目录 → extra-packages/
+4. sh shell/prepare-packages.sh           # 只解压本通道 .run(脚本内再过滤一道)+ 收集一级子目录 ipk → packages/ 软件包目录
+5. 拼接 PACKAGES = 官方基础包 + $CUSTOM_PACKAGES(+ openclash/ssrp 内核下载)
+6. make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=... V=s
+7. 失败 exit 1(工作流红灯); 成功产物上传 Release(Autobuild-<机型> 等 tag)
+```
+
+**机型差异**：
+- ARM 机型取 `store/run/arm64/*`，并额外在 repositories.conf 头部加架构优先级：
+  `arch aarch64_generic 10` / `arch aarch64_cortex-a53 15`；
+- build25.sh 差异：`source apk-custom-packages.sh`，**同样使用内嵌 store**（只拷 `25_/25-` 前缀 .run，25.x 的 .run 内含 apk），用 `apk-prepare-packages.sh` 把 .apk 收集进 `packages/`（不克隆任何仓库，与 24 通道同逻辑；两个 prepare 脚本内部都有通道防御，防止误解压另一通道的包）；
+- gl-axt1800 / gl-ax1800（snapshot+apk）不支持第三方包，build24 内特判跳过；
+- n1 附晶晨宝盒（写 eMMC）；无线路由按 model/*.txt 机型清单。
+
+### 4.3 软件开关机制（个人选择，软件来源分两部分）
+
+软件来源两部分：
+- **上游同步的第三方软件**：由 Sync Store 每日同步进内嵌 store（来源 CloudRunFilesBuilder）；
+- **imm 仓库内软件**：ImmortalWrt 官方仓库内的软件（固件编译的底层来源），**无需同步**，
+  构建时直接从官方源解析安装；固定清单见 [store/imm-packages.md](store/imm-packages.md)（141 个，含中文说明）。
+
+开关文件 `custom-packages.sh`（24.10）/ `apk-custom-packages.sh`（25.12）分两段：
+- **自动生成段**（上半部分，Sync Store 维护）：每应用两行——注释行（应用名 | 中文名 | 用途 | 版本）+ `CUSTOM_PACKAGES` 行，取消注释即启用，启用状态跨同步保留；段内按用途分大分类（`CATEGORY_ORDER`：代理工具/网络服务/广告与DNS/文件与存储/系统与界面/设备管理/其他），**新应用在同步脚本 APP_META 里填 `cat` 字段即自动归类**，分类跨同步保持；
+- **固定段**（下半部分「以下imm仓库内的软件」）：中文注释 + `CUSTOM_PACKAGES` 行，取消注释即启用，同步不触碰该段；
+- 冲突提示已并入生成段用途栏；iStore 商店由工作流 UI 的 enable_store 布尔开关追加。
+
+---
+
+## 5. 命名规范汇总（三层统一）
+
+| 层 | 对象 | 规范 |
+| --- | --- | --- |
+| ① | workflow 文件 | 24.10 `<app>.yml` / 25.12 `25-<app>.yml` |
+| ① | shell 脚本 | `shell/<app>.sh`、`shell/<app>25.sh`、`install.sh`(opkg)/`install25.sh`(apk) |
+| ① | .run 产物 | `[通道前缀]<应用>_<版本>_<架构>.run`（§2.3） |
+| ① | Release | tag = 北京时间日期，所有应用合并上传 |
+| ② | store 目录 | `store/run/{x86,arm64}/`；.run 根目录；.ipk 应用同名子目录 |
+| ③ | 构建脚本 | `build.sh` / `build24.sh`+`build25.sh` / 无线路由 `build23/24/25.sh` |
+| ③ | 工作流 | `build-<机型>-<版本>.yml`；Release tag `Autobuild-<机型>` |
+| 全局 | 软件名 | 三层完全一致（builder 应用名 = store 目录名 = 开关文件包名） |
+
+---
+
+## 6. 防错清单（历史踩坑全集）
+
+| # | 规则 | 原因 |
+| --- | --- | --- |
+| 1 | .run 文件名必须可被正则解析（前缀/架构/版本规范） | 同步脚本按文件名归类与去重，坏名会归错架构或无法清理 |
+| 2 | 25.12 版 .run 必须带 `25_`/`25-` 前缀 | 与 24.10 版按通道共存，无前缀区分会互删 |
+| 3 | ipk 文件名中的 `~` 打包前替换为 `-` | 上游 sbwml 等 ipk 常含 `~`，opkg 安装会失败 |
+| 4 | opkg/ipk 与 apk 两条通道的脚本/命令/扩展名严禁混用 | 24.10 用 opkg，25.12 用 apk |
+| 5 | ARM 机型 repositories.conf 头部加架构优先级 | 同仓库双变体并存，不加会选错变体 |
+| 6 | x86 机型拷 `store/run/x86/*`，ARM 拷 `store/run/arm64/*` | 拷错架构构建必失败 |
+| 7 | 硬路由闪存有限，开关文件按需开启 | 包太多构建失败或固件过大 |
+| 8 | 冲突组勿同时开启：run↔quickfile、clashoo↔nikki、advancedplus↔argon-config | 上游注释明示冲突 |
+| 9 | 工作流输入用 `${{ github.event.inputs.xxx }}` | `${{ inputs. }}` 在部分场景解析失败（dev 修过） |
+| 10 | Release 上传加 `fail_on_unmatched_files: true` | 防产物路径错误时静默"成功" |
+| 11 | 构建命令 `V=s` + `pipefail` + `tee` 日志 | 失败时能拿到完整日志 |
+| 12 | 第一层 cron 分钟错开；Sync Store 由 builder 完成后即时触发（repository_dispatch），定时 7:00 兜底 | 先构建后同步，store 拿到当天完整 Release；通知漏发时定时仍会补同步 |
+| 13 | 第一层所有 API curl 带 GITHUB_TOKEN | 未认证撞共享 IP 限流（easytier 首跑即失败） |
+| 14 | 新 workflow 先合并默认分支再 dispatch | dispatch API 按文件名只在默认分支查找 |
+| 15 | 版本号提取覆盖 `_all.ipk` 后缀 | 漏掉会产出 `xxx-_all.run` 空版本坏名 |
+| 16 | 开关文件行内写**包名**不是文件名 | opkg/apk install 用包名（`bandix` 而非 `bandix_0.11.0-r25_x86_64.ipk`） |
+| 17 | 应用名归一化含 `-rcNN` 处理 | nekobox `-rc14` 曾导致新旧 run 无法互删 |
+| 18 | `.sh`/`.yml` 强制 LF 行尾（.gitattributes）；`.run`/`.ipk` 标记 binary | CRLF 会在 Linux 容器里报 bad interpreter；binary 转换会损坏载荷 |
+| 19 | store/README 表格与开关文件的**自动生成段**勿手改 | 下次同步会被覆盖；元数据修改请改同步脚本的 `APP_META` 表；imm 固定段（以下imm仓库内的软件）可正常取消注释，同步不触碰 |
+| 20 | 开关文件无手写段，不存在重复行问题 | 已通过统一为生成段从机制上消除 |
+| 21 | 同步改动先 `--dry-run` 验证 | 防首跑误删/误放 |
+| 22 | gl-axt1800/gl-ax1800 不支持第三方包 | snapshot+apk 包管理器特判 |
+| 23 | 25.12 通道 .run 内的 apk 必须命名为 `${name}-${version}.apk`（无架构后缀），builder 的 `normalize_apk_names.py` 自动规范化 | imagebuilder `apk mkndx` 本地索引不写 filename 字段，安装时按默认规范推导文件名，带 `_arch` 后缀的文件 ENOENT → APKE_INDEX_STALE "package mentioned in index not found"（2026-09-14 验收构建发现，蓝本同样存在） |
+| 24 | 同一 ipk 集的 luci 主包已内置 i18n 时，不要附加独立 luci-i18n-* 包 | opkg check_data_file_clashes 硬失败（bandix 案例：kiddin9 的 luci-app-bandix 内置 zh-cn，加 luci-i18n-bandix-zh-cn 构建失败） |
+| 25 | apk v3 包格式 = `ADBd` 魔数 + raw-deflate（非 gzip），验证/解析勿按 v2 处理 | 官方 imm 25.12 源同样为 ADBd 格式；v2 才是 gzip tar 三流拼接 |
+
+---
+
+## 7. 日常维护与故障排查
+
+| 场景 | 排查方法 |
+| --- | --- |
+| 每日例行 | ① 早 6:00 后看 builder 各 workflow 是否全绿（个别上游改名的会红，参考 pw2-25 改为动态解析）；② 早 7:00 后看 Sync Store 提交是否正常；③ store/README 表格与 store/run 实际内容是否一致 |
+| 某应用多日不更新 | 查 builder 对应 workflow 运行记录 → 查上游是否改名/停更 → 查 Sync Store 日志中该资产的下载/清理行为 |
+| 应用被标记停更 | 该 .run 连续 3 次不在 Release（上游 workflow 连续失败或上游停更）→ 文件与列表保留，注释带「上游停更」说明；builder 修好后应用重新出现在 Release，下次同步自动解除标记 |
+| 手动加 ipk | 放入 store/run/<arch>/ 下**与 .run 推导名不冲突**的目录，同步不删；会自动出现在阶段三的软件列表中 |
+| 启用软件后构建失败 | ① 包名是否写对（对照生成段）；② 冲突组；③ 该包在对应架构目录是否存在；④ 看 build 日志中 opkg 的报错 |
+| Release 积累过多 | builder 手动触发 clean-release（保留最近 N 天）；本仓库 Release 按机型 tag 复用，无积累问题 |
+
+---
+
+## 8. 附录：关键文件索引
+
+**第一层 CloudRunFilesBuilder（本地 + GitHub）**
+- 标准 ipk 模板：[rtp2httpd.yml](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/.github/workflows/rtp2httpd.yml)、[mosdns.yml](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/.github/workflows/mosdns.yml)
+- zip 模板：[easytier.yml](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/.github/workflows/easytier.yml)
+- 目录列表模板：[lucky.yml](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/.github/workflows/lucky.yml) + [lucky.sh](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/shell/lucky.sh)、[bandix.sh](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/shell/bandix.sh)
+- 安装脚本：[install.sh](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/shell/install.sh)（opkg）/ [install25.sh](https://github.com/passengerya/CloudRunFilesBuilder/blob/daily/shell/install25.sh)（apk）
+
+**本仓库 AutoBuildTWrt**
+- 同步脚本：[store/sync_run_files.py](store/sync_run_files.py)
+- 同步工作流：[sync-store.yml](.github/workflows/sync-store.yml)
+- 同步状态：[store/.sync-state.json](store/.sync-state.json)
+- 软件列表汇总：[store/README.md](store/README.md)（自动维护段）
+- 开关文件：[shell/custom-packages.sh](shell/custom-packages.sh)（24.10）、[shell/apk-custom-packages.sh](shell/apk-custom-packages.sh)（25.12）
+- 构建脚本：[x86-64/build24.sh](x86-64/build24.sh)、[x86-64/build25.sh](x86-64/build25.sh)、[armsr-armv8/build.sh](armsr-armv8/build.sh)
+- 公共脚本：[shell/prepare-packages.sh](shell/prepare-packages.sh)、[shell/apk-prepare-packages.sh](shell/apk-prepare-packages.sh)
+
+**参考仓库（GitHub, 本地已删）**
+- [passengerya/store](https://github.com/passengerya/store)（内嵌方案参考实现）
+- [passengerya/AutoBuildImmortalWrt](https://github.com/passengerya/AutoBuildImmortalWrt)（新项目蓝本）
