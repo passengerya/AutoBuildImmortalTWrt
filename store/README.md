@@ -49,13 +49,20 @@ python3 store/sync_run_files.py             # 正式同步（需要 GITHUB_TOKEN
 | 软件 | 通道 | 版本 | 架构 | 包含软件包 |
 | --- | --- | --- | --- | --- |
 | argon | apk (25.12) | 2.4.7 | arm64 / x86 | luci-app-argon-config-26.236.50544~cb5d434.apk, luci-i18n-argon-config-zh-cn-26.236.50544~cb5d434.apk, luci-theme-argon-2.4.7-r20260824.apk |
+| clashoo | apk (25.12) | 2026.09.14 | arm64 / x86 | clashoo-2026.09.14.dc66a8a-r1-aarch64_generic.apk, clashoo-2026.09.14.dc66a8a-r1-x86_64.apk, luci-app-clashoo-1.30.0-r14-aarch64_cortex-a53.apk, luci-i18n-cl... |
+| easytier | apk (25.12) | v2.6.4 | arm64 / x86 | easytier-2.6.4.apk, easytier-noweb-2.6.4.apk, luci-app-easytier-2.6.4-r1.apk, luci-i18n-easytier-zh-cn-26.136.03667~39d7eda.apk |
+| luci-app-advancedplus | apk (25.12) | 1.8.7-r20251116 | arm64 / x86 | luci-app-advancedplus-1.8.7-r20251116.apk, luci-i18n-advancedplus-zh-cn-0.apk |
+| luci-app-amlogic | apk (25.12) | 3.1.321-r1 | arm64 / x86 | luci-app-amlogic-3.1.321-r1.apk, luci-i18n-amlogic-zh-cn-0.apk |
 | luci-app-store | apk (25.12) | 0.2.1-r1 | arm64 / x86 | luci-app-store-0.2.1-r1.apk, luci-lib-taskd-1.0.26.apk, luci-lib-xterm-4.18.0.apk, taskd-1.0.3-r2.apk |
+| luci-app-tailscale-community | apk (25.12) | 4.2.3-r1 | arm64 / x86 | luci-app-tailscale-community-4.2.3-r1.apk, luci-i18n-tailscale-community-zh-cn-0.260809.33933.apk |
+| luci-theme-aurora | apk (25.12) | 1.3.0-r20260830 | arm64 / x86 | luci-theme-aurora-1.3.0-r20260830.apk |
 | mosdns | apk (25.12) | v5.3.4-r14 | arm64 / x86 | geo2txt-1.0.0-r1.apk, luci-app-mosdns-1.7.14-r1.apk, luci-i18n-mosdns-zh-cn-26.255.53985~73981c0.apk, mosdns-5.3.4-r14.apk, v2ray-geoip-2026.09.12-r1.apk, v2... |
 | openclash | apk (25.12) | v0.47.156 | arm64 / x86 | luci-app-openclash-0.47.156.apk |
 | openwrt-daede | apk (25.12) | 2026.09.14 | arm64 / x86 | dae-2026.09.06-r2-aarch64_generic.apk, dae-2026.09.06-r2-x86_64.apk, daed-2026.09.06-r3-aarch64_generic.apk, daed-2026.09.06-r3-x86_64.apk, luci-app-daede-1.... |
 | passwall | apk (25.12) | 26.9.9 | arm64 / x86 | chinadns-ng-2025.08.09-r1.apk, dns2socks-2.1-r2.apk, geoview-0.2.6-r1.apk, hysteria-2.12.2-r1.apk, luci-app-passwall-26.9.9-r1.apk, luci-i18n-passwall-zh-cn-... |
 | passwall2 | apk (25.12) | 26.9.12-2 | arm64 / x86 | chinadns-ng-2025.08.09-r1.apk, geoview-0.2.6-r1.apk, luci-app-passwall2.apk, luci-i18n-passwall2-zh-cn.apk, shadowsocks-rust-sslocal-1.25.0-r1.apk, shadowsoc... |
 | quickfile | apk (25.12) | 1.0.16 | arm64 / x86 | luci-app-quickfile-1.0.0-r1-aarch64_generic.apk, luci-app-quickfile-1.0.0-r1-x86_64.apk, luci-i18n-quickfile-zh-cn-26.143.10947.48a92b8-aarch64_generic.apk, ... |
+| rtp2httpd | apk (25.12) | 3.17.1-r1 | arm64 / x86 | luci-app-rtp2httpd-3.17.1-r1.apk, luci-i18n-rtp2httpd-zh-cn-3.17.1.apk, rtp2httpd-3.17.1-r1_aarch64_generic.apk, rtp2httpd-3.17.1-r1_x86_64.apk |
 | sing-box | apk (25.12) | v1.14.0 | arm64 / x86 | sing-box_1.14.0_openwrt_aarch64_generic.apk, sing-box_1.14.0_openwrt_x86_64.apk |
 | ssrp-mihomo | apk (25.12) |  | arm64 / x86 | chinadns-ng-2025.08.09-r1.apk, dns2tcp-1.1.2-r1.apk, ipt2socks-1.1.4-r3.apk, lua-neturl-1.2.1-r1.apk, luci-app-ssr-plus-196-r9.apk, luci-i18n-ssr-plus-zh-cn-... |
 | adguardhome | ipk (24.10) | v0.107.79 | arm64 / x86 | luci-app-adguardhome-all.ipk |

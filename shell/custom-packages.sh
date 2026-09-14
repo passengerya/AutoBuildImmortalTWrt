@@ -252,7 +252,7 @@
 # 自动生成: nikki（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-nikki luci-i18n-nikki-ru luci-i18n-nikki-zh-cn luci-i18n-nikki-zh-tw mihomo-alpha mihomo-meta nikki"
 # 自动生成: openclash（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
 # 自动生成: openlist2（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openlist2 luci-i18n-openlist2-zh-cn openlist2"
 # 自动生成: openwrt-daede（store 内可用, 取消下一行注释即启用; 勿与上方手写段落重复开启）
