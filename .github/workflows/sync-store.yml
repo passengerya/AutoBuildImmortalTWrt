@@ -1,10 +1,12 @@
 # 从 CloudRunFilesBuilder 的 release 同步 .run 文件到本仓库内嵌 store/run/ 目录
 #
 # 触发方式:
-#   1. 定时: 每天 23:00 UTC(北京时间 7:00), 留出上游每日构建的完成时间
-#   2. 手动: workflow_dispatch(可指定其它源仓库)
+#   1. 主动通知: builder 全部构建完成后发 repository_dispatch(event_type: builder-done),
+#      store 即时同步, 不必等定时
+#   2. 定时: 每天 23:00 UTC(北京时间 7:00), 兜底(通知漏发/全部失败时仍会同步)
+#   3. 手动: workflow_dispatch(可指定其它源仓库)
 #
-# 注意: 定时触发只会使用默认分支(master)上的 workflow 文件,
+# 注意: 定时/通知触发只会使用默认分支(master)上的 workflow 文件,
 #       请把本文件合并到 master 分支后才会生效。
 
 name: Sync Store
@@ -16,6 +18,8 @@ on:
         description: '源仓库(owner/repo)'
         required: false
         default: 'passengerya/CloudRunFilesBuilder'
+  repository_dispatch:
+    types: [builder-done]
   schedule:
     # 23:00 UTC = 北京时间 7:00
     - cron: '0 23 * * *'
