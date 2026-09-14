@@ -34,7 +34,7 @@
 
 ```
 ① CloudRunFilesBuilder（第一层，独立仓库）
-   49 个工作流每天北京时间 6:00 起错峰运行：
+   51 个工作流每天北京时间 6:00 起错峰运行：
    拉取上游最新 ipk → makeself 打包成 .run 自解压包 → 上传当日 Release
    → 全部完成后由最后完成者即时通知本仓库（repository_dispatch）
 
