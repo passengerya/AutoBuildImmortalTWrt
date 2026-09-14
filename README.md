@@ -17,7 +17,7 @@
 
 | 特性 | 说明 |
 | --- | --- |
-| 🧩 第三方软件每日自动同步 | 上游软件包由 [CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder) 每日打包，本仓库 Sync Store 工作流每天自动同步进内嵌 `store/` 目录，**新版本软件第二天即可用** |
+| 🧩 第三方软件即时自动同步 | 上游软件包由 [CloudRunFilesBuilder](https://github.com/passengerya/CloudRunFilesBuilder) 每日打包，构建完成后即时通知（repository_dispatch）本仓库 Sync Store 同步进内嵌 `store/` 目录（23:00 UTC 定时兜底），**新版本软件当天即可用** |
 | ⚙️ 按需集成软件 | 在 `shell/custom-packages.sh` 中**取消注释**即可把软件装进固件（详见下文"如何开启第三方软件"） |
 | 📦 自定义固件大小 | 默认 1GB，可选 1G~4G；也可用分区扩容插件自行扩容 |
 | 🐳 可选预装 Docker | UI 勾选即可 |
@@ -34,18 +34,22 @@
 
 ```
 ① CloudRunFilesBuilder（第一层，独立仓库）
-   41 个工作流每天北京时间 6:00 起错峰运行：
+   47 个工作流每天北京时间 6:00 起错峰运行：
    拉取上游最新 ipk → makeself 打包成 .run 自解压包 → 上传当日 Release
+   → 全部完成后由最后完成者即时通知本仓库（repository_dispatch）
 
-        ↓ 本仓库 Sync Store 工作流（每天北京时间 7:00）
+        ↓ Sync Store 工作流（即时触发；每天北京时间 7:00 定时兜底）
 
 ② 内嵌 store/（本仓库内，由同步脚本维护）
-   store/sync_run_files.py 两阶段：
+   store/sync_run_files.py 三阶段：
    阶段 A：从最新 Release 同步 .run 到 store/run/x86/、store/run/arm64/
            （24.10 ipk 版与 25.12 apk 版按通道共存，各自保留一个变体；
             同前缀旧版本自动清理，不触碰 ipk 子目录）
    阶段 B：把每个 .run 自解压包里的 ipk 解压到应用同名子目录
            （如 dufs-0.46.0-r1_x86_64.run → store/run/x86/dufs/*.ipk）
+   阶段 C：自动维护软件列表——更新 store/README 软件表与两个开关文件的生成段
+           （启用状态跨同步保留；连续 3 次不在上游的应用标记「停更」并保留；
+            冲突组同时开启时在生成段顶部输出 ⚠️ 警告）
    完成后自动 git 提交推送
 ```
 
@@ -85,7 +89,7 @@
 AutoBuildImmortalTWrt/
 ├── .github/workflows/    # 16 个机型构建工作流 + sync-store.yml 同步工作流
 ├── store/                # 内嵌第三方软件包库（Sync Store 工作流每日自动更新）
-│   ├── sync_run_files.py # 同步脚本：.run 拉取 + ipk 解压两阶段
+│   ├── sync_run_files.py # 同步脚本：.run 拉取 + ipk 解压 + 列表维护三阶段
 │   └── run/x86/  run/arm64/   # .run 根目录 + 应用同名 ipk 子目录
 ├── shell/                # 公共脚本（所有机型共用）
 │   ├── custom-packages.sh        # 24.10 第三方软件开关（取消注释开启）
@@ -139,7 +143,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-go-zh-cn"   # ← 去掉行首 
 
 3. 触发构建，软件即被打进固件。
 
-> 注意：24.10 与 25.12 是两条独立通道，请按固件版本改对应的开关文件；部分软件存在冲突组合（如 `luci-app-run` 与 `quickfile`、`clashoo` 与 `nikki`），注释里已标注，请勿同时开启。
+> 注意：24.10 与 25.12 是两条独立通道，请按固件版本改对应的开关文件；部分软件存在冲突组合（如 `luci-app-run` 与 `quickfile`、`clashoo` 与 `nikki`、`advancedplus` 与 `argon-config`），注释里已标注请勿同时开启——若被同时开启，Sync Store 会在生成段顶部自动输出 ⚠️ 冲突警告行。
 
 ## 📟 固件默认行为
 

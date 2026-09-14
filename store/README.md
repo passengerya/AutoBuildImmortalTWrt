@@ -25,7 +25,7 @@ store/
 
 ## 同步机制
 
-同步分两个阶段（`sync_run_files.py`）：
+同步分三个阶段（`sync_run_files.py`，API 请求带重试，限流/网络抖动不中断同步）：
 
 **阶段一：.run 文件**
 - 来源：`passengerya/CloudRunFilesBuilder` 的**最新 Release**（每日构建的 .run 资产）
@@ -40,8 +40,16 @@ store/
 - 由解压生成的应用目录每次同步会**重建**（归同步管理）；不含 .ipk 的 .run（如 25.12 的 apk 包）不生成目录
 - 人工新增 ipk 请放入独立的、与 .run 推导名不冲突的目录，不会被删除
 
+**阶段三：软件列表维护（自动）**
+- 更新下方软件列表表格（按 store 实际内容增删行）与两个开关文件的自动生成段；
+- **启用状态跨同步保留**：取消注释的应用不会因同步被重新注释；
+- **停更保留**：连续 3 次不在上游 Release 的应用保留 .run 与列表，注释附加「上游停更」，重新出现自动解除；
+- **冲突警告**：冲突组（clashoo↔nikki、advancedplus↔argon、quickfile↔luci-app-run）同时启用时，生成段顶部输出 ⚠️ 警告行；
+- 完成后自动 git 提交推送（提交范围 store/ + shell/）。
+
 **触发**：`.github/workflows/sync-store.yml`
-- 定时：每天 23:00 UTC（北京时间 7:00，晚于上游 6:00 的每日构建）
+- 即时：上游 builder 全部构建完成后发 repository_dispatch（event_type: `builder-done`）
+- 定时兜底：每天 23:00 UTC（北京时间 7:00，晚于上游 6:00 的每日构建）
 - 手动：workflow_dispatch（可指定其它源仓库）
 
 > 本目录只由 `sync-store` 工作流自动更新，**不要手动修改**；如需人工新增 ipk，按应用建同名子目录放入即可。
