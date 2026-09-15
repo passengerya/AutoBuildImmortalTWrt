@@ -259,4 +259,16 @@ if [ -f /etc/config/aurora ] && [ -f /usr/share/ucode/luci/template/themes/auror
     echo "reset aurora seeded config to empty file (config 1.2.0 template vs theme 1.3.0 mismatch)" >>$LOGFILE
 fi
 
+# luci-i18n-aurora-config-zh-cn 烘焙进固件时会导致 aurora 主题顶部栏排版错乱、
+# Design Studio 元素缺失(2026-09-16 用户实测: 同一 ipk 运行时安装一切正常;
+# 文件内容/翻译/脚本与手动安装完全一致, 机制未明, 属烘焙环境差异)。
+# 首启用内嵌 ipk 强制重装一次, 使包文件落入 overlay, 与已验证正常的
+# "运行时安装"状态一致。内嵌 ipk 随 store 版本更新时需同步替换。
+AURORA_I18N_IPK="/usr/share/aurora-i18n/luci-i18n-aurora-config-zh-cn_26.220.23245.28c257b_all.ipk"
+if [ -f /usr/lib/opkg/status ] && [ -f "$AURORA_I18N_IPK" ] && \
+   opkg list-installed 2>/dev/null | grep -q '^luci-i18n-aurora-config-zh-cn '; then
+    opkg install --force-reinstall "$AURORA_I18N_IPK" >>$LOGFILE 2>&1
+    echo "reinstall aurora i18n at first boot (baked vs runtime install anomaly)" >>$LOGFILE
+fi
+
 exit 0
