@@ -82,6 +82,18 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Mask PPPoE inputs
+        run: |
+          if [ -n "$PPPOE_ACCOUNT" ]; then
+            echo "::add-mask::$(printf '%s' "$PPPOE_ACCOUNT" | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')"
+          fi
+          if [ -n "$PPPOE_PASSWORD" ]; then
+            echo "::add-mask::$(printf '%s' "$PPPOE_PASSWORD" | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')"
+          fi
+        env:
+          PPPOE_ACCOUNT: ${{ github.event.inputs.pppoe_account }}
+          PPPOE_PASSWORD: ${{ github.event.inputs.pppoe_password }}
       
       - name: Enable Store integration
         run: |
@@ -114,6 +126,9 @@ jobs:
           include_docker="${{ github.event.inputs.include_docker }}"
           luci_version="${{ github.event.inputs.luci_version }}"
           echo "Building for rootfs_size: $profile"
+          # 构建日志写到 runner; 失败时由后续步骤上传为 artifact 诊断
+          mkdir -p "$RUNNER_TEMP/build-logs"
+          set -o pipefail
           docker run --rm -i \
             --user root \
             -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
@@ -128,7 +143,20 @@ jobs:
             -e ENABLE_PPPOE=${{ github.event.inputs.enable_pppoe }} \
             -e PPPOE_ACCOUNT=${{ github.event.inputs.pppoe_account }} \
             -e PPPOE_PASSWORD=${{ github.event.inputs.pppoe_password }} \
-          immortalwrt/imagebuilder:x86-64-openwrt-${luci_version} /bin/bash -lc "set -o pipefail; /home/build/immortalwrt/build.sh 2>&1 | tee /tmp/imm_build.log"
+            -e BUILD_LOG_DIR=/home/build/immortalwrt/bin/build-diag \
+          immortalwrt/imagebuilder:x86-64-openwrt-${luci_version} \
+            /bin/bash -lc "/home/build/immortalwrt/build.sh" \
+            2>&1 | tee "$RUNNER_TEMP/build-logs/x86-64-25.12-build.log"
+
+      - name: Upload build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-diagnostics-25.12-${{ github.run_number }}
+          path: |
+            ${{ runner.temp }}/build-logs/
+            ${{ github.workspace }}/bin/build-diag/
+          if-no-files-found: warn
           
 
       - name: Create info

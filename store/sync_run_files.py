@@ -86,13 +86,13 @@ APP_META = {
     "homeproxy": {"cn": "代理平台", "desc": "现代代理平台(基于 sing-box)", "src": "immortalwrt/homeproxy", "cat": "代理工具"},
     "luci-app-advancedplus": {"cn": "高级设置", "desc": "进阶设置(与 argon-config 冲突勿同时开启)", "src": "sirpdboy/luci-app-advancedplus", "cat": "系统与界面"},
     "luci-app-amlogic": {"cn": "晶晨宝盒", "desc": "晶晨机顶盒管理(仅 ARM64 平台)", "src": "ophub/luci-app-amlogic", "cat": "设备管理"},
-    "luci-app-aurora-config": {"cn": "Aurora配置中心", "desc": "Aurora 主题配置中心(配色/布局/字体/品牌/主题商店)", "src": "eamonxg/luci-app-aurora-config", "cat": "系统与界面"},
+    "luci-app-aurora-config": {"cn": "Aurora配置中心", "desc": "Aurora 主题配置中心(需配合 Aurora 主题, 稳定验证时先关闭)", "src": "eamonxg/luci-app-aurora-config", "cat": "系统与界面"},
     "luci-app-nekobox": {"cn": "NekoBox代理", "desc": "NekoBox 代理工具", "src": "Thaolga/openwrt-nekobox", "cat": "代理工具"},
     "luci-app-store": {"cn": "iStore商店", "desc": "iStore 应用商店", "src": "linkease/istore", "cat": "设备管理"},
     "luci-app-tailscale-community": {"cn": "Tailscale组网", "desc": "Tailscale 组网(Community 版)", "src": "Tokisaki-Galaxy/luci-app-tailscale-community", "cat": "网络服务"},
     "luci-app-uninstall": {"cn": "高级卸载", "desc": "彻底卸载插件的工具", "src": "上游 run 直采", "cat": "系统与界面"},
-    "luci-theme-aurora": {"cn": "极光主题", "desc": "极光主题界面", "src": "eamonxg/luci-theme-aurora", "cat": "系统与界面"},
-    "luci-theme-shadcn": {"cn": "Shadcn主题", "desc": "现代 Shadcn 风格界面主题", "src": "eamonxg/luci-theme-shadcn", "cat": "系统与界面"},
+    "luci-theme-aurora": {"cn": "极光主题", "desc": "极光主题界面(会接管 LuCI 菜单/路由, 谨慎启用)", "src": "eamonxg/luci-theme-aurora", "cat": "系统与界面"},
+    "luci-theme-shadcn": {"cn": "Shadcn主题", "desc": "现代 Shadcn 风格界面主题(会接管 LuCI 菜单/路由, 24.10 下谨慎启用)", "src": "eamonxg/luci-theme-shadcn", "cat": "系统与界面"},
     "lucky": {"cn": "Lucky大吉", "desc": "端口转发/反向代理/内网穿透", "src": "gdy666/lucky via dl.openwrt.ai", "cat": "网络服务"},
     "momo": {"cn": "Momo代理", "desc": "基于 sing-box 的透明代理", "src": "nikkinikki-org/OpenWrt-momo", "cat": "代理工具"},
     "mosdns": {"cn": "DNS分流", "desc": "高性能 DNS 分流(DoH/DoQ 等)", "src": "sbwml/luci-app-mosdns", "cat": "广告与DNS"},
@@ -118,7 +118,28 @@ CONFLICT_GROUPS = [
     {"clashoo", "nikki"},
     {"luci-app-advancedplus", "argon"},
     {"quickfile", "luci-app-run"},
+    {"argon", "luci-theme-aurora", "luci-theme-shadcn"},
 ]
+
+# 各机型 build 脚本默认都会加入 Argon; 生成段里即使没取消注释 argon,
+# 启用其它主题时实际固件仍会形成多主题组合, 需要参与冲突提示。
+BASE_ENABLED_APPS = {"argon"}
+
+# 与 CloudRunFilesBuilder f82f32f 保持一致的冗余包剔除名单:
+# easytier-noweb 与 easytier 提供相同二进制、luci-i18n-easytier-zh-cn 的文件
+# 已由 luci-app-easytier 内置, 同时安装必然 check_data_file_clashes 导致构建失败。
+# builder 新 Release 已不再打包, 但同步按「资产最多的 Release」选择时可能仍拿到
+# 旧资产, 故同步侧兜底剔除, 直到上游资产完全替换为止。
+EXCLUDED_PACKAGE_RE = [
+    re.compile(r"^easytier-noweb[-_].*\.(ipk|apk)$"),
+    re.compile(r"^luci-i18n-easytier-zh-cn[-_].*\.(ipk|apk)$"),
+]
+
+
+def is_excluded_package(name):
+    """判断包文件是否属于已知冗余冲突包(解压时应剔除)。"""
+    base = os.path.basename(name)
+    return any(p.match(base) for p in EXCLUDED_PACKAGE_RE)
 
 # arm64 变体优先级(仅当本仓库中该应用没有既有文件时生效):
 # generic 兼容性最好, 其次是 cortex-a53 优化构建、a53, 最后是纯 aarch64
@@ -245,9 +266,12 @@ def arch_of(name):
     return ["x86", "arm64"]  # 架构无关, 两个目录都放
 
 
-def choose(cands, key, arch, existing_variants):
-    """同一(应用, 架构)的多个候选里选一个。"""
-    existing = existing_variants.get((key, arch))
+def choose(cands, key, arch, existing_variants, channel):
+    """同一(应用, 架构)的多个候选里选一个。
+
+    existing_variants 按 (通道, 应用, 架构) 索引, 24/25 通道各自的既有变体互不影响。
+    """
+    existing = existing_variants.get((channel, key, arch))
 
     def sel(a):
         name = a["name"]
@@ -368,6 +392,9 @@ def extract_ipks_from_runs(dry_run=False):
                 ipks, apks = [], []
                 for root, _, names in os.walk(tmp):
                     for n in names:
+                        if is_excluded_package(n):
+                            print("[%s] 剔除冗余冲突包: %s" % (arch, n))
+                            continue
                         if n.endswith(".ipk"):
                             ipks.append(os.path.join(root, n))
                         elif n.endswith(".apk"):
@@ -572,11 +599,12 @@ def maintain_lists(summary, valid_names, dry_run=False):
     for channel, sh_path in (("ipk", os.path.join(ROOT, "shell", "custom-packages.sh")),
                              ("apk", os.path.join(ROOT, "shell", "apk-custom-packages.sh"))):
         enabled = read_enabled_apps(sh_path)
+        enabled_for_conflicts = enabled | BASE_ENABLED_APPS
         pkg_name_fn = ipk_package_name if channel == "ipk" else apk_package_name
         sec = []
         # 冲突组检查: 同组内同时启用 >=2 个应用时, 在生成段顶部输出警告(仅提示, 不阻断)
         for group in CONFLICT_GROUPS:
-            hit = sorted(group & enabled)
+            hit = sorted(group & enabled_for_conflicts)
             if len(hit) >= 2:
                 sec.append("# ⚠️ 冲突警告: %s 同时开启, 可能互相冲突, 请只保留其中一个" % " 与 ".join(hit))
         # 按大分类分组: 新应用按 APP_META 的 cat 自动归类, 分类顺序见 CATEGORY_ORDER
@@ -662,7 +690,7 @@ def main():
 
 def run_sync(assets, dry_run=False):
     """从 CloudRunFilesBuilder Release 同步 .run 资产到内嵌 store(原有逻辑)。"""
-    # 统计本仓库现有的变体选择(用于同名应用延续原变体)
+    # 统计本仓库现有的变体选择(用于同名应用延续原变体; 按通道区分, 24/25 互不影响)
     existing_variants = {}
     for arch, d in ARCH_DIRS.items():
         if not os.path.isdir(d):
@@ -671,7 +699,7 @@ def run_sync(assets, dry_run=False):
             if f.endswith(".run"):
                 v = variant_of(f)
                 if v is not None:
-                    existing_variants[(norm_key(f), arch)] = v
+                    existing_variants[(channel_of(f), norm_key(f), arch)] = v
 
     # 按(通道, 应用, 架构)分组: 24/25 两个通道各自保留一个变体, 互不挤占
     groups = {}
@@ -684,7 +712,7 @@ def run_sync(assets, dry_run=False):
 
     for (channel, key, arch) in sorted(groups):
         cands = groups[(channel, key, arch)]
-        chosen = choose(cands, key, arch, existing_variants)
+        chosen = choose(cands, key, arch, existing_variants, channel)
         if len(cands) > 1:
             for c in cands:
                 mark = "  <- 选中" if c is chosen else ""

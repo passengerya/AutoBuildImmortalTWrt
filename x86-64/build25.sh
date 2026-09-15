@@ -18,8 +18,14 @@ pppoe_account=${PPPOE_ACCOUNT}
 pppoe_password=${PPPOE_PASSWORD}
 EOF
 
-echo "cat pppoe-settings"
-cat /home/build/immortalwrt/files/etc/config/pppoe-settings
+echo "pppoe-settings written (credentials redacted)"
+echo "enable_pppoe=${ENABLE_PPPOE}"
+if [ -n "$PPPOE_ACCOUNT" ]; then
+    echo "pppoe_account=<redacted>"
+fi
+if [ -n "$PPPOE_PASSWORD" ]; then
+    echo "pppoe_password=<redacted>"
+fi
 
 if [ -z "$CUSTOM_PACKAGES" ]; then
   echo "⚪️ 未选择 任何第三方软件包"
@@ -39,7 +45,10 @@ else
 
   echo "✅ Run files copied to extra-packages:"
   # 解压并拷贝apk到packages目录
-  sh shell/apk-prepare-packages.sh
+  sh shell/apk-prepare-packages.sh || {
+    echo "❌ 第三方软件包预处理失败"
+    exit 1
+  }
   ls -lah /home/build/immortalwrt/packages/
 fi
 
