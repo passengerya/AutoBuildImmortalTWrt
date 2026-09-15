@@ -162,6 +162,29 @@ if [ -f /usr/bin/quickfile ]; then
     uci add_list nginx._lan.include='conf.d/*.locations'
     uci set nginx._lan.access_log='off; # logd openwrt'
 
+    # LuCI 经 nginx+uwsgi 前端时, nginx 包自带的 uwsgi_params 不转发 HTTP_COOKIE,
+    # ucode cgi 读不到 sysauth 会话 cookie → 页面内不嵌入 sessionid → 前端 RPC
+    # 回退到 rpcd 的匿名零会话, 所有动态数据/表单字段权限被拒(界面元素缺失)。
+    # 在 luci.locations 的 /cgi-bin/luci location 内补上 cookie 转发。
+    if [ -f /etc/nginx/conf.d/luci.locations ] && ! grep -q 'uwsgi_param HTTP_COOKIE' /etc/nginx/conf.d/luci.locations; then
+        sed -i 's#^location /cgi-bin/luci {#location /cgi-bin/luci {\n\tuwsgi_param HTTP_COOKIE $http_cookie;#' /etc/nginx/conf.d/luci.locations
+        echo "fix luci nginx cookie forwarding" >>$LOGFILE
+    fi
+
+    # ngx_http_ubus_module 是动态模块时 nginx -V 检测不到, 上游 60_nginx-luci-support
+    # 不会自动添加 /ubus location; 这里按模块文件存在与否兜底添加。
+    if [ -f /usr/lib/nginx/modules/ngx_http_ubus_module.so ] && [ -f /etc/nginx/conf.d/luci.locations ] && ! grep -q 'location /ubus' /etc/nginx/conf.d/luci.locations; then
+        cat <<'EOT' >> /etc/nginx/conf.d/luci.locations
+
+location /ubus {
+        ubus_interpreter;
+        ubus_socket_path /var/run/ubus/ubus.sock;
+        ubus_parallel_req 2;
+}
+EOT
+        echo "fix luci nginx ubus location" >>$LOGFILE
+    fi
+
     uci commit nginx
     echo "fix quickfile nginx config" >>$LOGFILE
 fi
