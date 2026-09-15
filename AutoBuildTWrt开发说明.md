@@ -54,13 +54,13 @@
 
 ## 2. 第一层 CloudRunFilesBuilder
 
-### 2.1 工作流清单（51 个）
+### 2.1 工作流清单（47 个）
 
-**24.10 ipk 通道（29 个）**：adguardhome、argon、aurora-theme、aurora-config、shadcn、advancedplus、amlogic（仅 ARM64）、bandix、clashoo、dufs、easytier、homeproxy、lucky、momo、mosdns、nekobox、nikki、openclash(oc)、openlist2、openwrt-daede、passwall(main)、passwall2(pw2)、quickfile(24-quickfile)、rtp2httpd、sing-box(singbox)、ssr-plus(ssrp)、tailscale-community、iStore(store)、高级卸载(advance_uninstall)
+**24.10 ipk 通道（27 个）**：adguardhome、argon、shadcn、advancedplus、amlogic（仅 ARM64）、bandix、clashoo、dufs、easytier、homeproxy、lucky、momo、mosdns、nekobox、nikki、openclash(oc)、openlist2、openwrt-daede、passwall(main)、passwall2(pw2)、quickfile(24-quickfile)、rtp2httpd、sing-box(singbox)、ssr-plus(ssrp)、tailscale-community、iStore(store)、高级卸载(advance_uninstall)
 
-**25.12 apk 通道（19 个）**：argon25、build-pw、mosdns25、oc25、pw2-25、ssrp25、store25、25-quickfile、25-singbox、25-openwrt-daede、25-clashoo、25-rtp2httpd、25-advancedplus、25-aurora-theme、25-aurora-config、25-amlogic、25-tailscale-community、25-easytier、25-shadcn
+**25.12 apk 通道（17 个）**：argon25、build-pw、mosdns25、oc25、pw2-25、ssrp25、store25、25-quickfile、25-singbox、25-openwrt-daede、25-clashoo、25-rtp2httpd、25-advancedplus、25-amlogic、25-tailscale-community、25-easytier、25-shadcn
 
-> aurora-config（Aurora 配置中心，24/25 双通道）2026-09-16 恢复：主题依赖配置中心生成的 `/etc/config/aurora` 渲染顶部工具栏（见防错清单 #34），只装主题会排版错乱。两个工作流**只打包主 ipk**——`luci-i18n-aurora-config-*` 语言包烘焙安装会破坏主题渲染（见 #33），builder 不打包、同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除历史资产。
+> 2026-09-16 起 aurora 全系（`luci-theme-aurora` 主题、`luci-app-aurora-config` 配置中心及语言包，24/25 双通道共 4 个工作流）彻底移除——烘焙进固件的 aurora 主题渲染始终异常（见防错清单 #33/#34），项目不再打包维护。
 
 **维护（3 个）**：clean（旧运行记录）、clean-release（旧 Release）、remove（全部 tag）
 
@@ -173,7 +173,7 @@ store/
 | 手动 ipk 安全 | 手动目录不进管理名单，永不被删 |
 | 冗余包剔除 | 解压时按 `EXCLUDED_PACKAGE_RE` 剔除已知文件冲突包（见 §3.4），不进目录与汇总 |
 | 变体选择按通道 | `existing_variants` 按 (通道, 应用, 架构) 索引，24/25 通道的既有变体互不影响（2026-09-15 修复：此前 24 通道变体会错误影响 25 通道选择） |
-| 冲突提示含基础包 | 冲突检查使用 `enabled ∪ BASE_ENABLED_APPS`（各 build 脚本固定加入 Argon），启用 aurora/shadcn 等备选主题时生成段顶部输出 ⚠️ 警告（仅提示不阻断，供用户显式选择） |
+| 冲突提示含基础包 | 冲突检查使用 `enabled ∪ BASE_ENABLED_APPS`（各 build 脚本固定加入 Argon），启用 shadcn 等备选主题时生成段顶部输出 ⚠️ 警告（仅提示不阻断，供用户显式选择） |
 | 幂等 | 无新资产时也重跑三阶段，保持列表与实际内容一致 |
 
 ---
@@ -287,13 +287,13 @@ store/
 | 25 | apk v3 包格式 = `ADBd` 魔数 + raw-deflate（非 gzip），验证/解析勿按 v2 处理 | 官方 imm 25.12 源同样为 ADBd 格式；v2 才是 gzip tar 三流拼接 |
 | 26 | easytier 家族只保留主包：`easytier-noweb` 与 `easytier` 提供相同二进制、`luci-i18n-easytier-zh-cn` 文件已由 `luci-app-easytier` 内置 | 同时安装 opkg `check_data_file_clashes` 硬失败（Build #8/#9 根因：启用行含 4 包 → package_install Error 255）。builder f82f32f 已剔除，但 TWrt 同步按「资产最多的 Release」选择时可能仍拿到旧 4 包资产 → **同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除**（ipk/apk 双通道），直到上游资产完全替换 |
 | 27 | LuCI 走 nginx 前端时（quickfile 引入 luci-nginx）：nginx 包自带 `uwsgi_params` **不转发 HTTP_COOKIE**，必须在 `luci.locations` 的 location 内补 `uwsgi_param HTTP_COOKIE $http_cookie;` | ucode cgi 读 `getenv('HTTP_COOKIE')` 拿会话 cookie，拿不到则页面无会话渲染 → HTML 不嵌入 sessionid → 前端 RPC 回退 rpcd 全零匿名会话 → `uci/get 没有权限`、动态面板空白 =「界面元素缺失」（2026-09-15 用户刷机后主诉，与主题/静态资源无关）。固件侧 99-custom.sh quickfile 块首启用自动 sed 修复；另动态模块场景兜底添加 /ubus location（上游 60_nginx-luci-support 的 `nginx -V` 检测不到 .so 模块）。诊断口诀：菜单 JSON 正常 + CSS 正常 + `session.login` 返回完整 ACL 但页面 `L.env.sessionid` 为 null → 必是会话没传到前端 |
-| 28 | aurora/shadcn 不是纯 CSS 主题（first-boot 设置 `luci.main.mediaurlbase` 并自带 menu/router JS），默认固件只留 Argon；启用备选主题属显式选择，同步会输出 ⚠️ 冲突警告（`BASE_ENABLED_APPS={"argon"}` 参与冲突检查） | 多主题并存会互相接管 LuCI 菜单/路由，界面异常难排查 |
+| 28 | shadcn 不是纯 CSS 主题（first-boot 设置 `luci.main.mediaurlbase` 并自带 menu/router JS），默认固件只留 Argon；启用备选主题属显式选择，同步会输出 ⚠️ 冲突警告（`BASE_ENABLED_APPS={"argon"}` 参与冲突检查） | 多主题并存会互相接管 LuCI 菜单/路由，界面异常难排查 |
 | 29 | prepare 脚本重名包检查：**内容不同才硬错误**，内容相同/逻辑包名重复只告警 | store 中同一依赖被多个应用目录携带是常态（如 chinadns-ng 同时出现在 depends/passwall/passwall2），旧行为按序覆盖即可正常构建；硬错误会误杀构建（2026-09-15 验证构建 #10 实测） |
 | 30 | PPPoE 密码不进日志：workflow `::add-mask::` + build 脚本只回显 `<redacted>` | 构建日志将作为失败 artifact 保留，明文密码会泄露 |
 | 31 | 同步脚本变体选择必须按通道索引（`(channel_of(f), norm_key(f), arch)`） | 不按通道会把 24 通道既有变体错误用于 25 通道候选选择（测试 test_channel_scoped_variant 覆盖） |
 | 32 | 构建失败日志要落在宿主 runner 并 `if: failure()` 上传 artifact | `docker --rm` 容器内日志随容器销毁（Build #8 因此无法取证；用 GCM 凭据认证 GitHub API 才能下载 job 日志） |
-| 33 | aurora 语言包（`luci-i18n-aurora-config-*`，含 zh-cn）剔除：builder aurora-config 工作流只打包主 ipk，同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除历史 Release 中内嵌语言包的旧资产（`EXCLUDED_APPS` 亦含语言包名），**构建侧 prepare 脚本对 .run 解包结果做同样的兜底过滤**（三层防线） | 语言包烘焙进固件会破坏 aurora 主题渲染（顶部功能选项栏排版错乱、Design Studio 元素缺失）；同一 ipk 运行时安装完全正常（2026-09-16 实测：主题+配置中心+zh-cn 语言包三者烘焙异常，只删 zh-cn 语言包即恢复正常；机制未明，属烘焙环境差异）。为什么必须三层：同步按「资产最多的 Release」选源，修复资产刚上传时最新 Release 资产数最少，同步仍会选旧 Release 的旧 .run（2026-09-16 实测踩到，仅同步侧剔除只保住 ipk 目录、保不住 .run 文件本身）——构建侧过滤是最后防线。注意：24.10 的 lmo 是无魔数的新格式（值块+哈希索引+尾部总长），勿按旧 0x950412DE 魔数判断损坏 |
-| 34 | aurora 主题与配置中心是**设计上的一对**：主题 header.ut/sysauth.ut 直接读 UCI `/etc/config/aurora`（顶部工具栏 `toolbar_item` 条目、颜色/nav 等 tokens 全来自该配置），此文件由 luci-app-aurora-config 的 uci-defaults（`80_aurora`/`81_aurora-fonts`）首次启动生成；主题 ipk 自身不含该配置。同步脚本已加依赖提示：主题启用而配置中心未启用时生成段输出 ⚠️ | 只烘焙主题=配置文件不存在→顶部工具栏条目全丢+Design Studio 视图（配置中心提供）缺失=排版错乱。2026-09-16 曾把配置中心一起下架，结果主题单独烘焙仍然错乱——恢复配置中心、只剔除语言包即正常。教训：下架判断前先验证目标应用的运行时依赖来源，勿把「配套组件」当「问题组件」一并移除 |
+| 33 | aurora 全系（`luci-theme-aurora` 主题、`luci-app-aurora-config` 配置中心、`luci-i18n-aurora-config-*` 语言包）2026-09-16 起彻底移除：builder 侧 4 个工作流删除，同步侧 `EXCLUDED_APPS` 全链路剔除（不下载/不解压/不生成列表），`EXCLUDED_PACKAGE_RE` 与构建侧 prepare 脚本兜底过滤历史旧 .run 资产（三层防线） | aurora 烘焙进固件渲染始终异常：主题+配置中心+语言包烘焙 → 顶部功能选项栏排版错乱、Design Studio 元素缺失；只删语言包 → 恢复正常；只留主题（配置中心也没了）→ 依然错乱；而同一 ipk 运行时安装完全正常（md5 相同、重启后正常）——烘焙环境差异，机制未明，最终决定整体移除。两个通用教训：①剔除名单必须三层（builder 打包层 + 同步解压层 + 构建 prepare 层），因为同步按「资产最多的 Release」选源，修复资产刚上传时最新 Release 资产数最少，同步仍选旧 Release 的旧 .run，仅同步侧剔除保不住 .run 文件本身；②24.10 的 lmo 是无魔数的新格式（值块+哈希索引+尾部总长），勿按旧 0x950412DE 魔数判断损坏 |
+| 34 | 主题类应用排查先查**运行时依赖来源**：aurora 主题 header.ut/sysauth.ut 直接读 UCI `/etc/config/aurora`（顶部工具栏 `toolbar_item` 条目、颜色/nav 等 tokens 全来自该配置），此文件由配置中心的 uci-defaults（`80_aurora`/`81_aurora-fonts`）首次启动生成，主题 ipk 自身不含——所以「只装主题」必然错乱，「主题+配置中心」才是设计上的最小组合 | 只烘焙主题=配置文件不存在→顶部工具栏条目全丢+Design Studio 视图（配置中心提供）缺失=排版错乱。2026-09-16 曾把配置中心一起下架，结果主题单独烘焙仍错乱，暴露了主题对配置的隐藏依赖。教训：下架/改包组合前先解包验证目标应用的运行时依赖来源，勿把「配套组件」当「问题组件」一并移除 |
 
 ---
 

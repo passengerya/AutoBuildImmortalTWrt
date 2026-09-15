@@ -85,8 +85,8 @@ find "$BASE_DIR" -mindepth 2 -maxdepth 2 -type f -name "*.apk" ! -path "$TEMP_DI
 
 # 剔除冗余/冲突包(名单与 store/sync_run_files.py 的 EXCLUDED_PACKAGE_RE 保持一致):
 # 同步按「资产最多的 Release」选源, 可能拿到历史旧 .run(内含已被剔除的包,
-# 如 easytier-noweb、aurora 语言包), 这里兜底过滤, 防止其重新进入 packages/ 被烘焙。
-EXCLUDED_PKG_RE='^(easytier-noweb|luci-i18n-easytier-zh-cn|luci-i18n-aurora-config)[-_].*\.apk$'
+# 如 easytier-noweb), 这里兜底过滤, 防止其重新进入 packages/ 被烘焙。
+EXCLUDED_PKG_RE='^(easytier-noweb|luci-i18n-easytier-zh-cn)[-_].*\.apk$'
 : > "$CANDIDATE_LIST.filtered"
 while IFS= read -r pkg; do
     [ -n "$pkg" ] || continue
