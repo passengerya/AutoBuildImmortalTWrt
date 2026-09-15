@@ -66,6 +66,14 @@ class HelperTests(unittest.TestCase):
                 )
             self.assertEqual(srf.read_enabled_apps(path), {"easytier"})
 
+    def test_excluded_apps(self):
+        # luci-app-aurora-config 已下架(烘焙安装破坏主题渲染), 同步/解压/生成列表全链路剔除
+        self.assertIn("luci-app-aurora-config", srf.EXCLUDED_APPS)
+        self.assertNotIn("luci-app-aurora-config", srf.APP_META)
+        # 主题本身保留
+        self.assertNotIn("luci-theme-aurora", srf.EXCLUDED_APPS)
+        self.assertIn("luci-theme-aurora", srf.APP_META)
+
     def test_is_excluded_package(self):
         # 与主包文件冲突的冗余包应剔除(ipk 与 apk 双通道)
         self.assertTrue(srf.is_excluded_package("easytier-noweb_2.6.4_x86_64.ipk"))

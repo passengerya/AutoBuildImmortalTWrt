@@ -290,6 +290,7 @@ store/
 | 30 | PPPoE 密码不进日志：workflow `::add-mask::` + build 脚本只回显 `<redacted>` | 构建日志将作为失败 artifact 保留，明文密码会泄露 |
 | 31 | 同步脚本变体选择必须按通道索引（`(channel_of(f), norm_key(f), arch)`） | 不按通道会把 24 通道既有变体错误用于 25 通道候选选择（测试 test_channel_scoped_variant 覆盖） |
 | 32 | 构建失败日志要落在宿主 runner 并 `if: failure()` 上传 artifact | `docker --rm` 容器内日志随容器销毁（Build #8 因此无法取证；用 GCM 凭据认证 GitHub API 才能下载 job 日志） |
+| 33 | luci-app-aurora-config（含中文包）已下架：同步脚本 `EXCLUDED_APPS` 全链路剔除（不下载/不解压/不生成列表），builder 侧 aurora-config 工作流已删除，项目只保留 luci-theme-aurora 主题 | 该配置中心烘焙进固件会破坏 aurora 主题渲染（顶部栏排版错乱、Design Studio 元素缺失）；同一 ipk 运行时安装完全正常（2026-09-16 排查：文件内容/翻译/脚本烘焙与手动完全一致，机制未明，属烘焙环境差异）。注意：24.10 的 lmo 是无魔数的新格式（值块+哈希索引+尾部总长），勿按旧 0x950412DE 魔数判断损坏 |
 
 ---
 

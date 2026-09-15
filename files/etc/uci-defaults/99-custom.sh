@@ -244,31 +244,4 @@ fi
 uci set luci.main.mediaurlbase='/luci-static/bootstrap'
 uci commit luci
 
-# aurora-config 1.2.0 的 80_aurora 首启用其模板种子 /etc/config/aurora(nav_type
-# mega-menu + v7 色板 + 工具栏项), 与主题 luci-theme-aurora 1.3.0 内置默认渲染
-# 路径不一致(header.ut 读取后进入注入式渲染, 排版错乱/元素缺失)。首启用把
-# 种子配置重置为空文件(存在但零字节):
-# - 文件必须存在: Design Studio 客户端 uci.load('aurora') 依赖它, 删除会报
-#   RPCError(RPC call to uci/get failed with ubus code 4: 未找到资源)
-# - 零字节 → uci.get_all 返回空对象 → 主题走内置默认渲染(与仅装主题时完全一致);
-#   注意不能写 config aurora 'theme' 空节——空节仍带 .type/.name 元键,
-#   header.ut 会按非空配置进入注入路径, 渲染异常
-# 用户在 Design Studio 应用配置时会按当前 schema 写入完整配置, 功能不受影响。
-if [ -f /etc/config/aurora ] && [ -f /usr/share/ucode/luci/template/themes/aurora/header.ut ]; then
-    : > /etc/config/aurora
-    echo "reset aurora seeded config to empty file (config 1.2.0 template vs theme 1.3.0 mismatch)" >>$LOGFILE
-fi
-
-# luci-i18n-aurora-config-zh-cn 烘焙进固件时会导致 aurora 主题顶部栏排版错乱、
-# Design Studio 元素缺失(2026-09-16 用户实测: 同一 ipk 运行时安装一切正常;
-# 文件内容/翻译/脚本与手动安装完全一致, 机制未明, 属烘焙环境差异)。
-# 首启用内嵌 ipk 强制重装一次, 使包文件落入 overlay, 与已验证正常的
-# "运行时安装"状态一致。内嵌 ipk 随 store 版本更新时需同步替换。
-AURORA_I18N_IPK="/usr/share/aurora-i18n/luci-i18n-aurora-config-zh-cn_26.220.23245.28c257b_all.ipk"
-if [ -f /usr/lib/opkg/status ] && [ -f "$AURORA_I18N_IPK" ] && \
-   opkg list-installed 2>/dev/null | grep -q '^luci-i18n-aurora-config-zh-cn '; then
-    opkg install --force-reinstall "$AURORA_I18N_IPK" >>$LOGFILE 2>&1
-    echo "reinstall aurora i18n at first boot (baked vs runtime install anomaly)" >>$LOGFILE
-fi
-
 exit 0

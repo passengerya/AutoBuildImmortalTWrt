@@ -86,7 +86,6 @@ APP_META = {
     "homeproxy": {"cn": "代理平台", "desc": "现代代理平台(基于 sing-box)", "src": "immortalwrt/homeproxy", "cat": "代理工具"},
     "luci-app-advancedplus": {"cn": "高级设置", "desc": "进阶设置(与 argon-config 冲突勿同时开启)", "src": "sirpdboy/luci-app-advancedplus", "cat": "系统与界面"},
     "luci-app-amlogic": {"cn": "晶晨宝盒", "desc": "晶晨机顶盒管理(仅 ARM64 平台)", "src": "ophub/luci-app-amlogic", "cat": "设备管理"},
-    "luci-app-aurora-config": {"cn": "Aurora配置中心", "desc": "Aurora 主题配置中心(需配合 Aurora 主题, 稳定验证时先关闭)", "src": "eamonxg/luci-app-aurora-config", "cat": "系统与界面"},
     "luci-app-nekobox": {"cn": "NekoBox代理", "desc": "NekoBox 代理工具", "src": "Thaolga/openwrt-nekobox", "cat": "代理工具"},
     "luci-app-store": {"cn": "iStore商店", "desc": "iStore 应用商店", "src": "linkease/istore", "cat": "设备管理"},
     "luci-app-tailscale-community": {"cn": "Tailscale组网", "desc": "Tailscale 组网(Community 版)", "src": "Tokisaki-Galaxy/luci-app-tailscale-community", "cat": "网络服务"},
@@ -134,6 +133,13 @@ EXCLUDED_PACKAGE_RE = [
     re.compile(r"^easytier-noweb[-_].*\.(ipk|apk)$"),
     re.compile(r"^luci-i18n-easytier-zh-cn[-_].*\.(ipk|apk)$"),
 ]
+
+# 已下架应用(不再同步/解压/生成列表, 双通道生效):
+# luci-app-aurora-config 及其 i18n 包烘焙安装会破坏 aurora 主题渲染
+# (2026-09-16 排查: 同一 ipk 运行时安装正常, 烘焙异常, 机制未明),
+# 项目决定只保留 luci-theme-aurora 主题, 配置中心彻底移除。
+# builder 侧 aurora-config 工作流已同步删除, 此处兜底剔除历史 Release 中的旧资产。
+EXCLUDED_APPS = {"luci-app-aurora-config"}
 
 
 def is_excluded_package(name):
@@ -375,6 +381,9 @@ def extract_ipks_from_runs(dry_run=False):
             app = app_dir_of(f)
             if not app:
                 print("[%s] 无法推导应用名, 跳过: %s" % (arch, f))
+                continue
+            if app in EXCLUDED_APPS:
+                print("[%s] 跳过(已下架应用): %s" % (arch, f))
                 continue
             key = (channel_of(f), app)
             info = summary.setdefault(key, {"version": "", "archs": set(), "ipks": set(), "apks": set()})
@@ -704,6 +713,9 @@ def run_sync(assets, dry_run=False):
     # 按(通道, 应用, 架构)分组: 24/25 两个通道各自保留一个变体, 互不挤占
     groups = {}
     for a in assets:
+        if norm_key(a["name"]) in EXCLUDED_APPS:
+            print("跳过(已下架应用): %s" % a["name"])
+            continue
         for arch in arch_of(a["name"]):
             if arch == "skip":
                 print("跳过(架构不支持): %s" % a["name"])
