@@ -24,7 +24,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES sing-box"
 
 # ───────────────────── 网络服务 ─────────────────────
 # 自动生成: easytier | 异地组网 | EasyTier 点对点组网工具 | v2.6.4 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier easytier-noweb luci-app-easytier luci-i18n-easytier-zh-cn"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES easytier luci-app-easytier"
 # 自动生成: luci-app-tailscale-community | Tailscale组网 | Tailscale 组网(Community 版) | 4.2.3-r1 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-tailscale-community luci-i18n-tailscale-community-zh-cn"
 # 自动生成: rtp2httpd | IPTV转发 | IPTV 流媒体转发服务器 | 3.17.1-r1 | 取消下一行注释即启用
@@ -43,11 +43,9 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-rtp2httpd luci-i18n-rtp2httpd-zh-cn r
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config luci-i18n-argon-config-zh-cn luci-theme-argon"
 # 自动生成: luci-app-advancedplus | 高级设置 | 进阶设置(与 argon-config 冲突勿同时开启) | 1.8.7-r20251116 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus luci-i18n-advancedplus-zh-cn"
-# 自动生成: luci-app-aurora-config | Aurora配置中心 | Aurora 主题配置中心(配色/布局/字体/品牌/主题商店) | 1.2.0-r20260808 | 取消下一行注释即启用
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-aurora-config luci-i18n-aurora-config-zh-cn"
-# 自动生成: luci-theme-aurora | 极光主题 | 极光主题界面 | 1.3.0-r20260830 | 取消下一行注释即启用
+# 自动生成: luci-theme-aurora | 极光主题 | 极光主题界面(会接管 LuCI 菜单/路由, 谨慎启用) | 1.3.0-r20260830 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-aurora"
-# 自动生成: luci-theme-shadcn | Shadcn主题 | 现代 Shadcn 风格界面主题 | 0.5.0-r20260830 | 取消下一行注释即启用
+# 自动生成: luci-theme-shadcn | Shadcn主题 | 现代 Shadcn 风格界面主题(会接管 LuCI 菜单/路由, 24.10 下谨慎启用) | 0.5.0-r20260830 | 取消下一行注释即启用
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-shadcn"
 
 # ───────────────────── 设备管理 ─────────────────────
