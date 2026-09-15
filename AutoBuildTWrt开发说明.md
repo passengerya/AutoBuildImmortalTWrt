@@ -42,12 +42,13 @@
 | .run 内安装命令 | `opkg install *.ipk` | `apk add --allow-untrusted *.apk` |
 | 软件包目录 | store/run/<arch>/<应用>/（.ipk） | 不生成软件包目录（apk 在构建时由 apk-prepare-packages.sh 从 25.x .run 解出） |
 
-### 1.3 当前状态（2026-09-14）
+### 1.3 当前状态（2026-09-15）
 
 - 第一层：51 个工作流（29 个 24.10 + 19 个 25.12 + 3 个维护）
 - 内嵌 store：每架构 27 个应用目录、45 个 .run（共 90）、287 个 ipk（24/25 两通道并存，25 通道已内嵌）
 - 软件列表汇总：store/README.md 表格 37 个（应用×通道）条目
 - 分支：第一层 daily（生产）/ dev；本仓库 master（生产）/ dev
+- **2026-09-15 新增能力**：①同步脚本冗余包剔除（easytier-noweb/luci-i18n-easytier-zh-cn，与 builder f82f32f 一致）与按通道区分的变体选择修复；②构建工作流失败日志/包清单 artifact（宿主 runner tee + `if: failure()` 上传）+ PPPoE 输入掩码；③prepare 脚本 fail-fast（.run 解压非零即失败）+ TSV 包清单 + 重名检测；④离线单元测试 `tests/test_sync_run_files.py`；⑤LuCI 界面元素缺失根因已修复（nginx 前端不转发会话 cookie，见防错清单 #27，固件侧在 99-custom.sh 首启用自动修复）
 
 ---
 
@@ -144,6 +145,7 @@ store/
 - 解出的 .ipk 放入应用同名子目录（`dufs-0.46.0-r1_x86_64.run` → `store/run/x86/dufs/*.ipk`），目录**每次重建**；
 - 应用目录名由文件名推导（清洗前缀/架构/版本/`-rN`/`-rcNN`/hash/孤立数字）；
 - 25.12 的 .run 内含 .apk → 不生成目录，但收集 apk 文件名供阶段三使用；
+- **冗余包剔除**（2026-09-15 新增）：`EXCLUDED_PACKAGE_RE`/`is_excluded_package()` 在解压时剔除已知与主包文件冲突的包（easytier-noweb 与 easytier 提供相同二进制、luci-i18n-easytier-zh-cn 的文件已由 luci-app-easytier 内置），ipk/apk 双通道生效——被剔除的包不进应用目录、不进阶段三汇总，生成段自然保持干净；与 builder f82f32f 的剔除保持一致，上游资产完全替换后自动成为 no-op；
 - 手动放入的 ipk 目录（与 .run 推导名不冲突）永不删除。
 
 ### 3.5 阶段三：软件列表自动维护
@@ -167,6 +169,9 @@ store/
 | 启用状态保留 | 用户在生成段取消注释的应用，按应用名识别，后续同步**保持启用** |
 | 停更标记 | .run **连续 3 次同步**不在上游 Release → 标记为「停更」：.run 与软件包目录**全部保留**，README 表格版本列附加 `⚠️上游停更`、生成段注释附加「上游停更(保留旧版)」；应用重新出现在 Release 时自动解除标记；计数与停更名单存 `store/.sync-state.json` |
 | 手动 ipk 安全 | 手动目录不进管理名单，永不被删 |
+| 冗余包剔除 | 解压时按 `EXCLUDED_PACKAGE_RE` 剔除已知文件冲突包（见 §3.4），不进目录与汇总 |
+| 变体选择按通道 | `existing_variants` 按 (通道, 应用, 架构) 索引，24/25 通道的既有变体互不影响（2026-09-15 修复：此前 24 通道变体会错误影响 25 通道选择） |
+| 冲突提示含基础包 | 冲突检查使用 `enabled ∪ BASE_ENABLED_APPS`（各 build 脚本固定加入 Argon），启用 aurora/shadcn 等备选主题时生成段顶部输出 ⚠️ 警告（仅提示不阻断，供用户显式选择） |
 | 幂等 | 无新资产时也重跑三阶段，保持列表与实际内容一致 |
 
 ---
@@ -190,7 +195,9 @@ store/
 
 **统一规范**（全部工作流已应用）：
 - 输入引用用 `${{ github.event.inputs.xxx }}`；
-- 容器命令 `set -o pipefail; … 2>&1 | tee /tmp/imm_build.log`，`make image … V=s`；
+- 构建日志写到**宿主 runner**（`mkdir -p "$RUNNER_TEMP/build-logs"` + 宿主侧 `set -o pipefail` + `| tee "$RUNNER_TEMP/build-logs/….log"`，`make image … V=s`）——**不要写进 `docker --rm` 容器内 /tmp**（容器退出即丢日志，2026-09-15 之前 Build #8/#9 失败因此无法取证）；
+- 失败诊断 artifact：`actions/upload-artifact` + `if: failure()` 上传 runner 日志与容器内 `bin/build-diag/`（prepare 脚本包清单 TSV + 重名报告）；**不允许 `|| true` 掩盖失败**；
+- PPPoE 输入用 `::add-mask::` 掩码；build 脚本只回显 `<redacted>`，不打印明文密码；
 - 上传加 `fail_on_unmatched_files: true` 防止产物路径错误时静默成功；
 - **store 目录挂载**：`-v ${{ github.workspace }}/store:/home/build/immortalwrt/store`。
 
@@ -201,6 +208,11 @@ store/
 2. 写 files/etc/config/pppoe-settings     # UI 输入传入
 3. 按通道过滤拷贝内嵌 store(禁止克隆): 24.10 构建只拷非 25_/25- 前缀的 .run, 25.12 构建只拷 25_/25- 前缀的 .run, 外加应用 ipk/apk 子目录 → extra-packages/
 4. sh shell/prepare-packages.sh           # 只解压本通道 .run(脚本内再过滤一道)+ 收集一级子目录 ipk → packages/ 软件包目录
+   └─ 2026-09-15 起带预检: .run 解压非零立即失败(不再静默继续); 生成 TSV 包清单
+      (channel/source/basename/package/version/architecture/name_source, IPK 读 control
+      元数据、APK 读 .PKGINFO, 文件名兜底)写入 ${BUILD_LOG_DIR}; 同名文件内容不同=硬错误,
+      内容相同或仅逻辑包名重复=告警(依赖包被多应用目录携带是已知现象, 旧行为为按序覆盖);
+      无包可收集立即失败。build 脚本用 `|| { echo 预处理失败; exit 1; }` 接住其退出码
 5. 拼接 PACKAGES = 官方基础包 + $CUSTOM_PACKAGES(+ openclash/ssrp 内核下载)
 6. make image PROFILE=... PACKAGES=... FILES=... ROOTFS_PARTSIZE=... V=s
 7. 失败 exit 1(工作流红灯); 成功产物上传 Release(Autobuild-<机型> 等 tag)
@@ -271,6 +283,13 @@ store/
 | 23 | 25.12 通道 .run 内的 apk 必须命名为 `${name}-${version}.apk`（无架构后缀），builder 的 `normalize_apk_names.py` 自动规范化 | imagebuilder `apk mkndx` 本地索引不写 filename 字段，安装时按默认规范推导文件名，带 `_arch` 后缀的文件 ENOENT → APKE_INDEX_STALE "package mentioned in index not found"（2026-09-14 验收构建发现，蓝本同样存在） |
 | 24 | 同一 ipk 集的 luci 主包已内置 i18n 时，不要附加独立 luci-i18n-* 包 | opkg check_data_file_clashes 硬失败（bandix 案例：kiddin9 的 luci-app-bandix 内置 zh-cn，加 luci-i18n-bandix-zh-cn 构建失败） |
 | 25 | apk v3 包格式 = `ADBd` 魔数 + raw-deflate（非 gzip），验证/解析勿按 v2 处理 | 官方 imm 25.12 源同样为 ADBd 格式；v2 才是 gzip tar 三流拼接 |
+| 26 | easytier 家族只保留主包：`easytier-noweb` 与 `easytier` 提供相同二进制、`luci-i18n-easytier-zh-cn` 文件已由 `luci-app-easytier` 内置 | 同时安装 opkg `check_data_file_clashes` 硬失败（Build #8/#9 根因：启用行含 4 包 → package_install Error 255）。builder f82f32f 已剔除，但 TWrt 同步按「资产最多的 Release」选择时可能仍拿到旧 4 包资产 → **同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除**（ipk/apk 双通道），直到上游资产完全替换 |
+| 27 | LuCI 走 nginx 前端时（quickfile 引入 luci-nginx）：nginx 包自带 `uwsgi_params` **不转发 HTTP_COOKIE**，必须在 `luci.locations` 的 location 内补 `uwsgi_param HTTP_COOKIE $http_cookie;` | ucode cgi 读 `getenv('HTTP_COOKIE')` 拿会话 cookie，拿不到则页面无会话渲染 → HTML 不嵌入 sessionid → 前端 RPC 回退 rpcd 全零匿名会话 → `uci/get 没有权限`、动态面板空白 =「界面元素缺失」（2026-09-15 用户刷机后主诉，与主题/静态资源无关）。固件侧 99-custom.sh quickfile 块首启用自动 sed 修复；另动态模块场景兜底添加 /ubus location（上游 60_nginx-luci-support 的 `nginx -V` 检测不到 .so 模块）。诊断口诀：菜单 JSON 正常 + CSS 正常 + `session.login` 返回完整 ACL 但页面 `L.env.sessionid` 为 null → 必是会话没传到前端 |
+| 28 | aurora/shadcn 不是纯 CSS 主题（first-boot 设置 `luci.main.mediaurlbase` 并自带 menu/router JS），默认固件只留 Argon；启用备选主题属显式选择，同步会输出 ⚠️ 冲突警告（`BASE_ENABLED_APPS={"argon"}` 参与冲突检查） | 多主题并存会互相接管 LuCI 菜单/路由，界面异常难排查 |
+| 29 | prepare 脚本重名包检查：**内容不同才硬错误**，内容相同/逻辑包名重复只告警 | store 中同一依赖被多个应用目录携带是常态（如 chinadns-ng 同时出现在 depends/passwall/passwall2），旧行为按序覆盖即可正常构建；硬错误会误杀构建（2026-09-15 验证构建 #10 实测） |
+| 30 | PPPoE 密码不进日志：workflow `::add-mask::` + build 脚本只回显 `<redacted>` | 构建日志将作为失败 artifact 保留，明文密码会泄露 |
+| 31 | 同步脚本变体选择必须按通道索引（`(channel_of(f), norm_key(f), arch)`） | 不按通道会把 24 通道既有变体错误用于 25 通道候选选择（测试 test_channel_scoped_variant 覆盖） |
+| 32 | 构建失败日志要落在宿主 runner 并 `if: failure()` 上传 artifact | `docker --rm` 容器内日志随容器销毁（Build #8 因此无法取证；用 GCM 凭据认证 GitHub API 才能下载 job 日志） |
 
 ---
 
@@ -282,7 +301,8 @@ store/
 | 某应用多日不更新 | 查 builder 对应 workflow 运行记录 → 查上游是否改名/停更 → 查 Sync Store 日志中该资产的下载/清理行为 |
 | 应用被标记停更 | 该 .run 连续 3 次不在 Release（上游 workflow 连续失败或上游停更）→ 文件与列表保留，注释带「上游停更」说明；builder 修好后应用重新出现在 Release，下次同步自动解除标记 |
 | 手动加 ipk | 放入 store/run/<arch>/ 下**与 .run 推导名不冲突**的目录，同步不删；会自动出现在阶段三的软件列表中 |
-| 启用软件后构建失败 | ① 包名是否写对（对照生成段）；② 冲突组；③ 该包在对应架构目录是否存在；④ 看 build 日志中 opkg 的报错 |
+| 启用软件后构建失败 | ① 包名是否写对（对照生成段）；② 冲突组；③ 该包在对应架构目录是否存在；④ 看 build 日志中 opkg 的报错；⑤ 日志/包清单 artifact 从该次运行页面的 Artifacts 区下载（失败自动上传，含 prepare 包清单与重名报告）；⑥ opkg 报 `check_data_file_clashes` 时对照防错清单 #24/#26 |
+| 刷机后 LuCI 界面元素缺失 | 按防错清单 #27 的取证三步走：浏览器访问 `/cgi-bin/luci/admin/menu`（应返回完整 JSON）与 `/luci-static/argon/css/cascade.css`（应返回 CSS）→ Console 执行 `L.env.sessionid` 与 session.access 检查 → 会话在而页面没嵌入 sessionid 即 nginx cookie 转发问题（quickfile 场景），临时修复：`sed -i 's#^location /cgi-bin/luci {#&\n\tuwsgi_param HTTP_COOKIE $http_cookie;#' /etc/nginx/conf.d/luci.locations && /etc/init.d/nginx reload`，随后强制刷新重新登录 |
 | Release 积累过多 | builder 手动触发 clean-release（保留最近 N 天）；本仓库 Release 按机型 tag 复用，无积累问题 |
 
 ---
@@ -303,6 +323,8 @@ store/
 - 开关文件：[shell/custom-packages.sh](shell/custom-packages.sh)（24.10）、[shell/apk-custom-packages.sh](shell/apk-custom-packages.sh)（25.12）
 - 构建脚本：[x86-64/build24.sh](x86-64/build24.sh)、[x86-64/build25.sh](x86-64/build25.sh)、[armsr-armv8/build.sh](armsr-armv8/build.sh)
 - 公共脚本：[shell/prepare-packages.sh](shell/prepare-packages.sh)、[shell/apk-prepare-packages.sh](shell/apk-prepare-packages.sh)
+- 固件开机定制：[files/etc/uci-defaults/99-custom.sh](files/etc/uci-defaults/99-custom.sh)（网络/防火墙/PPPoE/quickfile-nginx 配置 + LuCI 会话 cookie 修复）
+- 离线单元测试：[tests/test_sync_run_files.py](tests/test_sync_run_files.py)（同步脚本纯函数 + 生成器幂等/标记边界/启用状态保持/冲突警告/停更判定/通道化变体选择；不联网、不执行 .run）
 
 **参考仓库（GitHub, 本地已删）**
 - [passengerya/store](https://github.com/passengerya/store)（内嵌方案参考实现）

@@ -28,16 +28,18 @@ store/
 同步分三个阶段（`sync_run_files.py`，API 请求带重试，限流/网络抖动不中断同步）：
 
 **阶段一：.run 文件**
-- 来源：`passengerya/CloudRunFilesBuilder` 的**最新 Release**（每日构建的 .run 资产）
+- 来源：`passengerya/CloudRunFilesBuilder` 的 Release 资产（每日构建的 .run）
+- 选择策略：取最近 5 个 Release 中 **.run 资产最多的那个**（每日分批上传时最新 Release 可能还没传完，直接取最新会把多数应用误判缺失）——注意此策略下个别应用的修复资产若落在资产较少的 Release，可能暂时同步不到旧内容，需靠阶段二的冗余包剔除兜底
 - 分类规则：
   - 文件名含 `x86_64` → `run/x86/`；含 `aarch64`/`arm64` → `run/arm64/`
   - 含 `aarch32`/`arm32`/`i386` → 跳过；无架构标记（如 `_all`）→ 两个目录都放
-  - 同一应用同一架构多个变体时：优先延续现有变体；新应用按 `generic > cortex-a53 > a53 > 纯aarch64` 选择
+  - 同一应用同一架构多个变体时：优先延续**本通道**现有变体（24/25 通道互不影响）；新应用按 `generic > cortex-a53 > a53 > 纯aarch64` 选择
   - 同步后删除**同应用、同架构、同日期前缀**的旧版本 .run（`24_` 只删 `24_`、`25-` 只删 `25-`），不触碰 .ipk 和子目录
 
 **阶段二：软件包目录（.ipk 文件）**
 - 来源：阶段一从 CloudRunFilesBuilder 拉取的 **.run 自解压包本身**——同步时把每个 .run 里的 .ipk 解压到应用同名子目录（如 `dufs-0.46.0-r1_x86_64.run` → `run/x86/dufs/*.ipk`）
 - 由解压生成的应用目录每次同步会**重建**（归同步管理）；不含 .ipk 的 .run（如 25.12 的 apk 包）不生成目录
+- **冗余包剔除**：解压时按 `EXCLUDED_PACKAGE_RE` 剔除已知与主包文件冲突的包（`easytier-noweb`、`luci-i18n-easytier-zh-cn`，与 builder f82f32f 的剔除一致），ipk/apk 双通道生效——被剔除的包不进应用目录、不进软件列表，上游资产完全替换后自动成为空操作
 - 人工新增 ipk 请放入独立的、与 .run 推导名不冲突的目录，不会被删除
 
 **阶段三：软件列表维护（自动）**
@@ -45,7 +47,7 @@ store/
 - **生成段按用途大分类**：分类（代理工具/网络服务/广告与DNS/文件与存储/系统与界面/设备管理）由同步脚本 APP_META 的 `cat` 字段决定，每次同步保持分类，新应用填好 cat 即自动归类；
 - **启用状态跨同步保留**：取消注释的应用不会因同步被重新注释；
 - **停更保留**：连续 3 次不在上游 Release 的应用保留 .run 与列表，注释附加「上游停更」，重新出现自动解除；
-- **冲突警告**：冲突组（clashoo↔nikki、advancedplus↔argon、quickfile↔luci-app-run）同时启用时，生成段顶部输出 ⚠️ 警告行；
+- **冲突警告**：冲突组（clashoo↔nikki、advancedplus↔argon、quickfile↔luci-app-run、argon↔aurora↔shadcn）同时启用时，生成段顶部输出 ⚠️ 警告行；其中 Argon 由各机型 build 脚本固定加入（`BASE_ENABLED_APPS`），生成段里未取消注释也参与主题冲突检查，启用 aurora/shadcn 时会提示多主题并存；
 - 完成后自动 git 提交推送（提交范围 store/ + shell/）。
 
 **触发**：`.github/workflows/sync-store.yml`

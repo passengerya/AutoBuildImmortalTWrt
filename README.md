@@ -67,8 +67,9 @@
    2. 写入 PPPoE 配置（UI 输入）
    3. 拷贝内嵌 store（按通道过滤）：24.10 构建只拷非 25_/25- 前缀的 .run，25.12 只拷 25_/25- 前缀的 .run，外加应用 ipk/apk 子目录 → extra-packages/
    4. prepare-packages.sh（或 apk 版）：只解压本通道 .run + 收集 ipk/apk → 更新 ImageBuilder 的 packages/ 软件包目录
+      （2026-09-15 起带预检：解压失败立即中断；生成 TSV 包清单；重名包内容冲突报错、其余告警）
    5. 拼接 PACKAGES = 官方基础包 + 你开启的第三方包（openclash/ssrp 额外下载内核）
-   6. make image ... V=s 构建（完整日志 tee 保存，失败即红灯）
+   6. make image ... V=s 构建（完整日志写到宿主 runner，失败时自动上传日志与包清单 artifact 供排查）
    7. 固件上传到对应 Release（Autobuild-x86-64 等，fail_on_unmatched_files 防静默失败）
 
 ⑤ 产出：OpenWrt/ImmortalWrt 固件包（.img.gz / rootfs.tar.gz / ISO 安装器）
@@ -145,6 +146,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-ddns-go-zh-cn"   # ← 去掉行首 
 3. 触发构建，软件即被打进固件。
 
 > 注意：24.10 与 25.12 是两条独立通道，请按固件版本改对应的开关文件；部分软件存在冲突组合（如 `luci-app-run` 与 `quickfile`、`clashoo` 与 `nikki`、`advancedplus` 与 `argon-config`），注释里已标注请勿同时开启——若被同时开启，Sync Store 会在生成段顶部自动输出 ⚠️ 冲突警告行。
+> 主题提示：各机型 build 脚本固定加入 Argon 主题；`aurora`/`shadcn` 并非纯 CSS 主题（会接管 LuCI 菜单/路由），如需启用请只保留一个主题界面，同步脚本会在多主题并存时输出 ⚠️ 警告。
+> 若开启 `quickfile`（会引入 nginx 前端接管 80 端口），固件首次启动会自动修复 LuCI 会话 cookie 转发（历史教训见开发说明防错清单 #27）。
 
 ## 📟 固件默认行为
 
