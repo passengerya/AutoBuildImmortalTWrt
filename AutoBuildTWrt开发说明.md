@@ -54,13 +54,13 @@
 
 ## 2. 第一层 CloudRunFilesBuilder
 
-### 2.1 工作流清单（49 个）
+### 2.1 工作流清单（51 个）
 
-**24.10 ipk 通道（28 个）**：adguardhome、argon、aurora-theme、shadcn、advancedplus、amlogic（仅 ARM64）、bandix、clashoo、dufs、easytier、homeproxy、lucky、momo、mosdns、nekobox、nikki、openclash(oc)、openlist2、openwrt-daede、passwall(main)、passwall2(pw2)、quickfile(24-quickfile)、rtp2httpd、sing-box(singbox)、ssr-plus(ssrp)、tailscale-community、iStore(store)、高级卸载(advance_uninstall)
+**24.10 ipk 通道（29 个）**：adguardhome、argon、aurora-theme、aurora-config、shadcn、advancedplus、amlogic（仅 ARM64）、bandix、clashoo、dufs、easytier、homeproxy、lucky、momo、mosdns、nekobox、nikki、openclash(oc)、openlist2、openwrt-daede、passwall(main)、passwall2(pw2)、quickfile(24-quickfile)、rtp2httpd、sing-box(singbox)、ssr-plus(ssrp)、tailscale-community、iStore(store)、高级卸载(advance_uninstall)
 
-**25.12 apk 通道（18 个）**：argon25、build-pw、mosdns25、oc25、pw2-25、ssrp25、store25、25-quickfile、25-singbox、25-openwrt-daede、25-clashoo、25-rtp2httpd、25-advancedplus、25-aurora-theme、25-amlogic、25-tailscale-community、25-easytier、25-shadcn
+**25.12 apk 通道（19 个）**：argon25、build-pw、mosdns25、oc25、pw2-25、ssrp25、store25、25-quickfile、25-singbox、25-openwrt-daede、25-clashoo、25-rtp2httpd、25-advancedplus、25-aurora-theme、25-aurora-config、25-amlogic、25-tailscale-community、25-easytier、25-shadcn
 
-> 2026-09-16 起 aurora-config（Aurora 配置中心，24/25 双通道）已下架删除——烘焙安装会破坏 aurora 主题渲染（见防错清单 #33），只保留 aurora-theme 主题。
+> aurora-config（Aurora 配置中心，24/25 双通道）2026-09-16 恢复：主题依赖配置中心生成的 `/etc/config/aurora` 渲染顶部工具栏（见防错清单 #34），只装主题会排版错乱。两个工作流**只打包主 ipk**——`luci-i18n-aurora-config-*` 语言包烘焙安装会破坏主题渲染（见 #33），builder 不打包、同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除历史资产。
 
 **维护（3 个）**：clean（旧运行记录）、clean-release（旧 Release）、remove（全部 tag）
 
@@ -292,7 +292,8 @@ store/
 | 30 | PPPoE 密码不进日志：workflow `::add-mask::` + build 脚本只回显 `<redacted>` | 构建日志将作为失败 artifact 保留，明文密码会泄露 |
 | 31 | 同步脚本变体选择必须按通道索引（`(channel_of(f), norm_key(f), arch)`） | 不按通道会把 24 通道既有变体错误用于 25 通道候选选择（测试 test_channel_scoped_variant 覆盖） |
 | 32 | 构建失败日志要落在宿主 runner 并 `if: failure()` 上传 artifact | `docker --rm` 容器内日志随容器销毁（Build #8 因此无法取证；用 GCM 凭据认证 GitHub API 才能下载 job 日志） |
-| 33 | luci-app-aurora-config（含中文包）已下架：同步脚本 `EXCLUDED_APPS` 全链路剔除（不下载/不解压/不生成列表），builder 侧 aurora-config 工作流已删除，项目只保留 luci-theme-aurora 主题 | 该配置中心烘焙进固件会破坏 aurora 主题渲染（顶部栏排版错乱、Design Studio 元素缺失）；同一 ipk 运行时安装完全正常（2026-09-16 排查：文件内容/翻译/脚本烘焙与手动完全一致，机制未明，属烘焙环境差异）。注意：24.10 的 lmo 是无魔数的新格式（值块+哈希索引+尾部总长），勿按旧 0x950412DE 魔数判断损坏 |
+| 33 | aurora 语言包（`luci-i18n-aurora-config-*`，含 zh-cn）剔除：builder aurora-config 工作流只打包主 ipk，同步侧 `EXCLUDED_PACKAGE_RE` 兜底剔除历史 Release 中内嵌语言包的旧资产（`EXCLUDED_APPS` 亦含语言包名） | 语言包烘焙进固件会破坏 aurora 主题渲染（顶部功能选项栏排版错乱、Design Studio 元素缺失）；同一 ipk 运行时安装完全正常（2026-09-16 实测：主题+配置中心+zh-cn 语言包三者烘焙异常，只删 zh-cn 语言包即恢复正常；机制未明，属烘焙环境差异）。注意：24.10 的 lmo 是无魔数的新格式（值块+哈希索引+尾部总长），勿按旧 0x950412DE 魔数判断损坏 |
+| 34 | aurora 主题与配置中心是**设计上的一对**：主题 header.ut/sysauth.ut 直接读 UCI `/etc/config/aurora`（顶部工具栏 `toolbar_item` 条目、颜色/nav 等 tokens 全来自该配置），此文件由 luci-app-aurora-config 的 uci-defaults（`80_aurora`/`81_aurora-fonts`）首次启动生成；主题 ipk 自身不含该配置。同步脚本已加依赖提示：主题启用而配置中心未启用时生成段输出 ⚠️ | 只烘焙主题=配置文件不存在→顶部工具栏条目全丢+Design Studio 视图（配置中心提供）缺失=排版错乱。2026-09-16 曾把配置中心一起下架，结果主题单独烘焙仍然错乱——恢复配置中心、只剔除语言包即正常。教训：下架判断前先验证目标应用的运行时依赖来源，勿把「配套组件」当「问题组件」一并移除 |
 
 ---
 

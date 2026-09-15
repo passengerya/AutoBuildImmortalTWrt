@@ -67,9 +67,10 @@ class HelperTests(unittest.TestCase):
             self.assertEqual(srf.read_enabled_apps(path), {"easytier"})
 
     def test_excluded_apps(self):
-        # luci-app-aurora-config 已下架(烘焙安装破坏主题渲染), 同步/解压/生成列表全链路剔除
-        self.assertIn("luci-app-aurora-config", srf.EXCLUDED_APPS)
-        self.assertNotIn("luci-app-aurora-config", srf.APP_META)
+        # aurora 语言包烘焙安装破坏主题渲染, 全链路剔除; 配置中心已恢复(主题依赖其 /etc/config/aurora)
+        self.assertIn("luci-i18n-aurora-config-zh-cn", srf.EXCLUDED_APPS)
+        self.assertNotIn("luci-app-aurora-config", srf.EXCLUDED_APPS)
+        self.assertIn("luci-app-aurora-config", srf.APP_META)
         # 主题本身保留
         self.assertNotIn("luci-theme-aurora", srf.EXCLUDED_APPS)
         self.assertIn("luci-theme-aurora", srf.APP_META)
@@ -84,6 +85,14 @@ class HelperTests(unittest.TestCase):
         self.assertTrue(
             srf.is_excluded_package("luci-i18n-easytier-zh-cn-26.136.03667~39d7eda.apk")
         )
+        # aurora 语言包(历史 .run 资产内嵌, 全部语言变体)剔除; 主包不受影响
+        self.assertTrue(
+            srf.is_excluded_package("luci-i18n-aurora-config-zh-cn_26.220.23245.28c257b_all.ipk")
+        )
+        self.assertTrue(
+            srf.is_excluded_package("luci-i18n-aurora-config-de-26.220.23245.28c257b.apk")
+        )
+        self.assertFalse(srf.is_excluded_package("luci-app-aurora-config_1.2.0-r20260808_all.ipk"))
         # 主包与 luci 界面包不受影响
         self.assertFalse(srf.is_excluded_package("easytier_2.6.4_x86_64.ipk"))
         self.assertFalse(srf.is_excluded_package("easytier-2.6.4.apk"))
@@ -251,8 +260,39 @@ class MaintainListsTests(unittest.TestCase):
         self.assertIn("冲突警告", ipk_sh)
         self.assertIn("argon", ipk_sh)
         self.assertIn("luci-theme-aurora", ipk_sh)
+        # 只开主题不开配置中心, 还应提示依赖警告(主题读取配置中心生成的 /etc/config/aurora)
+        self.assertIn("依赖提示", ipk_sh)
         # 警告不阻断: 用户显式启用的 Aurora 仍保持启用
         self.assertRegex(ipk_sh, r'(?m)^CUSTOM_PACKAGES="\$CUSTOM_PACKAGES luci-theme-aurora"$')
+
+    def test_aurora_theme_with_config_center_no_dependency_warning(self):
+        self._write_fixtures(
+            ipk_enabled={
+                "luci-theme-aurora": ["luci-theme-aurora"],
+                "luci-app-aurora-config": ["luci-app-aurora-config"],
+            },
+            ipk_disabled={},
+        )
+        summary = {
+            ("ipk", "luci-theme-aurora"): {
+                "version": "1.3.0-r20260830",
+                "archs": {"x86"},
+                "ipks": {"luci-theme-aurora_1.3.0-r20260830_all.ipk"},
+                "apks": set(),
+            },
+            ("ipk", "luci-app-aurora-config"): {
+                "version": "1.2.0-r20260808",
+                "archs": {"x86"},
+                "ipks": {"luci-app-aurora-config_1.2.0-r20260808_all.ipk"},
+                "apks": set(),
+            },
+        }
+        srf.maintain_lists(summary, valid_names=None, dry_run=False)
+        ipk_sh = self._read("shell/custom-packages.sh")
+        # 主题与配置中心配套启用: 无依赖提示, 两个应用都保持启用
+        self.assertNotIn("依赖提示", ipk_sh)
+        self.assertRegex(ipk_sh, r'(?m)^CUSTOM_PACKAGES="\$CUSTOM_PACKAGES luci-theme-aurora"$')
+        self.assertRegex(ipk_sh, r'(?m)^CUSTOM_PACKAGES="\$CUSTOM_PACKAGES luci-app-aurora-config"$')
 
     def test_mark_stale_runs_threshold(self):
         os.makedirs(srf.ARCH_DIRS["x86"], exist_ok=True)
