@@ -239,4 +239,19 @@ else
     echo "未检测到 Docker，跳过防火墙配置。"
 fi
 
+# 固定默认主题为 Bootstrap(99 最后执行, 覆盖各主题包首次启动脚本的 mediaurlbase 竞争;
+# 其他已安装主题仍可在 系统-系统-主题 中自主切换)
+uci set luci.main.mediaurlbase='/luci-static/bootstrap'
+uci commit luci
+
+# aurora-config 1.2.0 的 80_aurora 首启用其模板种子 /etc/config/aurora,
+# 与主题 luci-theme-aurora 1.3.0 内置默认渲染路径不一致(header.ut 读取该配置
+# 后进入注入式渲染, 切换主题后排版错乱/元素缺失; 手动安装只有主题、无此配置
+# 文件时正常)。首启用删除种子配置, 让主题走内置默认; 用户之后在
+# Aurora Design Studio 应用配置时, 会按当前 schema 写入与主题匹配的新配置。
+if [ -f /etc/config/aurora ] && [ -f /usr/share/ucode/luci/template/themes/aurora/header.ut ]; then
+    rm -f /etc/config/aurora
+    echo "reset aurora seeded config (config 1.2.0 template vs theme 1.3.0 mismatch)" >>$LOGFILE
+fi
+
 exit 0
