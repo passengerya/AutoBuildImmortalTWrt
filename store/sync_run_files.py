@@ -713,7 +713,9 @@ def run_sync(assets, dry_run=False):
     # 按(通道, 应用, 架构)分组: 24/25 两个通道各自保留一个变体, 互不挤占
     groups = {}
     for a in assets:
-        if norm_key(a["name"]) in EXCLUDED_APPS:
+        # 注意: 用 app_dir_of(连字符保留)与 EXCLUDED_APPS 比对, 与解压环节一致;
+        # norm_key 会把连字符转下划线, 直接比对会漏判。
+        if app_dir_of(a["name"]) in EXCLUDED_APPS:
             print("跳过(已下架应用): %s" % a["name"])
             continue
         for arch in arch_of(a["name"]):
