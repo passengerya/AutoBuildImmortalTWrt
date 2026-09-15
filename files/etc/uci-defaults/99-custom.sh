@@ -244,16 +244,19 @@ fi
 uci set luci.main.mediaurlbase='/luci-static/bootstrap'
 uci commit luci
 
-# aurora-config 1.2.0 的 80_aurora 首启用其模板种子 /etc/config/aurora, 与主题
-# luci-theme-aurora 1.3.0 内置默认渲染路径不一致(header.ut 读取后进入注入式渲染,
-# 排版错乱/元素缺失)。首启用把种子配置替换为最小空配置:
-# - 文件必须存在: Design Studio 客户端 uci.load('aurora') 依赖它, 删除会导致
+# aurora-config 1.2.0 的 80_aurora 首启用其模板种子 /etc/config/aurora(nav_type
+# mega-menu + v7 色板 + 工具栏项), 与主题 luci-theme-aurora 1.3.0 内置默认渲染
+# 路径不一致(header.ut 读取后进入注入式渲染, 排版错乱/元素缺失)。首启用把
+# 种子配置重置为空文件(存在但零字节):
+# - 文件必须存在: Design Studio 客户端 uci.load('aurora') 依赖它, 删除会报
 #   RPCError(RPC call to uci/get failed with ubus code 4: 未找到资源)
-# - 无任何 token/布局键: 主题走内置默认渲染(与仅装主题时的正常状态一致)
+# - 零字节 → uci.get_all 返回空对象 → 主题走内置默认渲染(与仅装主题时完全一致);
+#   注意不能写 config aurora 'theme' 空节——空节仍带 .type/.name 元键,
+#   header.ut 会按非空配置进入注入路径, 渲染异常
 # 用户在 Design Studio 应用配置时会按当前 schema 写入完整配置, 功能不受影响。
 if [ -f /etc/config/aurora ] && [ -f /usr/share/ucode/luci/template/themes/aurora/header.ut ]; then
-    printf "config aurora 'theme'\n" > /etc/config/aurora
-    echo "reset aurora seeded config to minimal (config 1.2.0 template vs theme 1.3.0 mismatch)" >>$LOGFILE
+    : > /etc/config/aurora
+    echo "reset aurora seeded config to empty file (config 1.2.0 template vs theme 1.3.0 mismatch)" >>$LOGFILE
 fi
 
 exit 0
