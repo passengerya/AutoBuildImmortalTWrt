@@ -137,12 +137,12 @@ if [ -s "$BASENAME_DUP_REPORT" ]; then
     done < "$BASENAME_DUP_REPORT"
     mv "$BASENAME_DUP_REPORT.details" "$BASENAME_DUP_REPORT"
     if [ "$duplicate_conflict" -ne 0 ]; then
-        echo "❌ 检测到内容不同的重复 ipk 文件名, 复制到 packages/ 会发生覆盖:"
+        echo "⚠️ 检测到内容不同的重复 ipk 文件名(复制到 packages/ 时按序覆盖, 与旧行为一致; 生效的是清单中最后一份):"
         cat "$BASENAME_DUP_REPORT"
-        exit 1
+    else
+        echo "⚠️ 检测到重复 ipk 文件名, 内容完全一致; 已保留诊断记录: $BASENAME_DUP_REPORT"
+        cat "$BASENAME_DUP_REPORT"
     fi
-    echo "⚠️ 检测到重复 ipk 文件名, 但内容完全一致; 已保留诊断记录: $BASENAME_DUP_REPORT"
-    cat "$BASENAME_DUP_REPORT"
 else
     echo "未检测到重复 ipk 文件名"
 fi
